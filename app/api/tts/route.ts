@@ -35,20 +35,220 @@ const ALLOWED_PACES = new Set(['drift', 'slow', 'medium', 'fast']);
 const ALLOWED_ACCENTS = new Set(['en-US', 'en-GB', 'en-AU', 'en-IN']);
 
 const MAX_TEXT_LENGTH = 1500;
+const MAX_PAYLOAD_BYTES = 16 * 1024; // 16 KB max for request body
+const BODY_READ_TIMEOUT_MS = 3000; // 3 seconds timeout for uploading/reading body
+
+// Google AI Studio API Key format: 'AIzaSy' followed by 33 characters (39 chars total)
+const GOOGLE_API_KEY_REGEX = /^AIzaSy[A-Za-z0-9_-]{33}$/;
+
+// -------------------------------------------------------------
+// Rate Limiter: In-memory sliding window with memory cap protection
+// -------------------------------------------------------------
+interface RateLimitRecord {
+  count: number;
+  resetTime: number;
+}
+
+const rateLimitMap = new Map<string, RateLimitRecord>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 10; // Max 10 requests per minute per IP
+const MAX_MAP_ENTRIES = 5000; // LRU/Cap protection against memory inflation
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retryAfterSec: number } {
+  const now = Date.now();
+
+  // Periodic pruning if map grows large
+  if (rateLimitMap.size > MAX_MAP_ENTRIES) {
+    for (const [key, record] of rateLimitMap.entries()) {
+      if (now > record.resetTime) {
+        rateLimitMap.delete(key);
+      }
+    }
+    if (rateLimitMap.size > MAX_MAP_ENTRIES) {
+      let count = 0;
+      for (const key of rateLimitMap.keys()) {
+        rateLimitMap.delete(key);
+        count++;
+        if (count >= MAX_MAP_ENTRIES / 2) break;
+      }
+    }
+  }
+
+  const record = rateLimitMap.get(ip);
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1, retryAfterSec: 0 };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    const retryAfterSec = Math.max(1, Math.ceil((record.resetTime - now) / 1000));
+    return { allowed: false, remaining: 0, retryAfterSec };
+  }
+
+  record.count += 1;
+  return {
+    allowed: true,
+    remaining: MAX_REQUESTS_PER_WINDOW - record.count,
+    retryAfterSec: 0,
+  };
+}
+
+function getClientIp(req: NextRequest): string {
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
+  const vercelRealIp = req.headers.get('x-vercel-forwarded-for') || req.headers.get('x-real-ip');
+  if (vercelRealIp) return vercelRealIp.trim();
+
+  const xForwardedFor = req.headers.get('x-forwarded-for');
+  if (xForwardedFor) {
+    const firstIp = xForwardedFor.split(',')[0].trim();
+    if (firstIp) return firstIp;
+  }
+
+  return (req as any).ip || '127.0.0.1';
+}
+
+// -------------------------------------------------------------
+// Safe Body Reader with Size & Timeout Limit
+// -------------------------------------------------------------
+async function readJsonWithLimit<T = any>(
+  req: NextRequest,
+  maxBytes: number = MAX_PAYLOAD_BYTES,
+  timeoutMs: number = BODY_READ_TIMEOUT_MS
+): Promise<{ data?: T; errorResponse?: NextResponse }> {
+  const contentType = req.headers.get('content-type') || '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return {
+      errorResponse: NextResponse.json(
+        { error: '請求格式錯誤，請使用 Content-Type: application/json。' },
+        { status: 415 }
+      ),
+    };
+  }
+
+  const contentLengthHeader = req.headers.get('content-length');
+  if (contentLengthHeader) {
+    const contentLength = parseInt(contentLengthHeader, 10);
+    if (!isNaN(contentLength) && contentLength > maxBytes) {
+      return {
+        errorResponse: NextResponse.json(
+          { error: `請求資料量過大（超過 ${maxBytes / 1024} KB 限制）。` },
+          { status: 413 }
+        ),
+      };
+    }
+  }
+
+  if (!req.body) {
+    return {
+      errorResponse: NextResponse.json(
+        { error: '請求內容為空，請提供 JSON 資料。' },
+        { status: 400 }
+      ),
+    };
+  }
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  const readPromise = (async () => {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        totalBytes += value.length;
+        if (totalBytes > maxBytes) {
+          try {
+            await reader.cancel();
+          } catch {}
+          throw new Error('PAYLOAD_TOO_LARGE');
+        }
+        chunks.push(value);
+      }
+    }
+    const combined = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    const text = new TextDecoder('utf-8').decode(combined);
+    return JSON.parse(text);
+  })();
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    const timer = setTimeout(() => {
+      try {
+        reader.cancel();
+      } catch {}
+      reject(new Error('READ_TIMEOUT'));
+    }, timeoutMs);
+    readPromise.finally(() => clearTimeout(timer));
+  });
+
+  try {
+    const parsed = await Promise.race([readPromise, timeoutPromise]);
+    return { data: parsed as T };
+  } catch (err: any) {
+    if (err?.message === 'PAYLOAD_TOO_LARGE') {
+      return {
+        errorResponse: NextResponse.json(
+          { error: `請求資料量過大（超過 ${maxBytes / 1024} KB 限制）。` },
+          { status: 413 }
+        ),
+      };
+    }
+    if (err?.message === 'READ_TIMEOUT') {
+      return {
+        errorResponse: NextResponse.json(
+          { error: '讀取請求資料逾時，請檢查連線狀態。' },
+          { status: 408 }
+        ),
+      };
+    }
+    return {
+      errorResponse: NextResponse.json(
+        { error: '無法解析 JSON 請求資料，請確認格式正確。' },
+        { status: 400 }
+      ),
+    };
+  }
+}
 
 export async function POST(req: NextRequest) {
+  // 1. Rate Limiting Check (protect compute & prevent upstream flood)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(clientIp);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      {
+        error: `請求過於頻繁，已觸發速率限制（每分鐘上限 ${MAX_REQUESTS_PER_WINDOW} 次）。請稍候 ${rateLimitResult.retryAfterSec} 秒後再試。`,
+        code: 'RATE_LIMIT_EXCEEDED',
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimitResult.retryAfterSec),
+          'X-RateLimit-Limit': String(MAX_REQUESTS_PER_WINDOW),
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+
+  // 2. Safe JSON Body Parsing with Size & Timeout Limits
+  const { data: body, errorResponse } = await readJsonWithLimit(req);
+  if (errorResponse) {
+    return errorResponse;
+  }
+
   const controller = new AbortController();
-  // 15-second timeout covering the entire request, network, and body parsing lifecycle
+  // 15-second total lifecycle timeout covering upstream fetch and serialization
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: '請提供合法的 JSON 請求資料。' }, { status: 400 });
-    }
-
     const {
       text,
       model = 'gemini-3.1-flash-tts-preview',
@@ -60,9 +260,7 @@ export async function POST(req: NextRequest) {
       apiKey,
     } = body;
 
-    // 1. Mandatory User API Key Check (Zero Server Key Exposure)
-    // Server-side shared key is completely disabled for public callers.
-    // Callers MUST provide their own valid Google AI Studio API Key.
+    // 3. Mandatory User API Key Check & Fast Format Validation (Zero Upstream Flood)
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       return NextResponse.json(
         {
@@ -75,8 +273,18 @@ export async function POST(req: NextRequest) {
     }
 
     const userApiKey = apiKey.trim();
+    if (!GOOGLE_API_KEY_REGEX.test(userApiKey)) {
+      return NextResponse.json(
+        {
+          error:
+            '提供的 Gemini API Key 格式無效（Google AI Studio 金鑰應以 AIzaSy 開頭，長度為 39 碼）。請確認後重試。',
+          code: 'INVALID_API_KEY_FORMAT',
+        },
+        { status: 400 }
+      );
+    }
 
-    // 2. Input validation & Whitelisting
+    // 4. Input validation & Whitelisting
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json({ error: '請提供要朗讀的英文文字。' }, { status: 400 });
     }
@@ -234,7 +442,7 @@ IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance,
     console.error('TTS API error:', error);
     return NextResponse.json({ error: error.message || '內部伺服器錯誤' }, { status: 500 });
   } finally {
-    // Guaranteed timeout cleanup covering full lifecycle
     clearTimeout(timeoutId);
   }
 }
+
