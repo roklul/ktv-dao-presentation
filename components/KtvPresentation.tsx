@@ -46,7 +46,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
     <main
       ref={viewportRef}
       id="presentation-viewport"
-      className="relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
+      className="relative w-full max-w-6xl min-h-[460px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-xl sm:rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
     >
       {/* Background Image Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -55,8 +55,8 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           alt="濟公活佛修行法語"
           className="w-full h-full object-cover object-left sm:object-center"
         />
-        {/* Soft Warm Dawn Atmosphere */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f8f1e7]/70 to-[#f8f1e7]/85" />
+        {/* Soft Warm Dawn Atmosphere with mobile legibility boost */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f8f1e7]/80 to-[#f8f1e7]/90 sm:via-[#f8f1e7]/70 sm:to-[#f8f1e7]/85" />
       </div>
 
       {/* Floating Bouncing Golden Lotus Marker */}
@@ -70,7 +70,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         }}
       >
         <div className="relative flex items-center justify-center">
-          <svg className="w-5 h-5 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C12 2 7 8 7 13C7 17.5 12 22 12 22C12 22 17 17.5 17 13C17 8 12 2 12 2Z" opacity="0.95" />
           </svg>
           <div className="absolute -inset-1 rounded-full bg-amber-400/50 blur-xs animate-ping pointer-events-none"></div>
@@ -78,12 +78,12 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       </div>
 
       {/* Presentation Central Content Box */}
-      <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[28%] sm:pl-[34%] md:pl-[36%] pr-3 sm:pr-8 py-3 sm:py-5">
+      <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[24%] xs:pl-[28%] sm:pl-[34%] md:pl-[36%] pr-2.5 sm:pr-8 py-2.5 sm:py-5">
         
         {/* English Verses (EB Garamond / Classic Book Serif) */}
         <div
           id="english-lyrics-box"
-          className="space-y-1 sm:space-y-1.5 font-en-classic text-[14px] sm:text-[18px] md:text-[22px] lg:text-[24px] leading-snug tracking-wide"
+          className="space-y-0.5 sm:space-y-1.5 font-en-classic text-[13px] xs:text-[15px] sm:text-[18px] md:text-[22px] lg:text-[24px] leading-snug tracking-wide"
         >
           {presentation.englishLines.map((line, lineIdx) => {
             const isRowActive = currentTime >= line.start && currentTime <= line.end;
@@ -123,11 +123,11 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         </div>
 
         {/* Golden Lotus Center Ornament (Exact Replica from Reference Art) */}
-        <div className="my-1.5 sm:my-3.5 flex items-center justify-center gap-3 w-full max-w-xl">
+        <div className="my-1 sm:my-3.5 flex items-center justify-center gap-2 sm:gap-3 w-full max-w-xl">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-600/70 to-amber-500"></div>
           <div className="text-amber-600 flex items-center px-1">
             <svg
-              className="w-6 h-6 sm:w-9 sm:h-9 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]"
+              className="w-5 h-5 sm:w-9 sm:h-9 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -147,7 +147,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         {/* Traditional Chinese Calligraphy Verses (LXGW WenKai TC / 標楷體) */}
         <div
           id="chinese-lyrics-box"
-          className="space-y-1 font-cn-kaiti text-[14px] sm:text-[18px] md:text-[22px] lg:text-[25px] leading-snug tracking-wider"
+          className="space-y-0.5 sm:space-y-1 font-cn-kaiti text-[13px] xs:text-[15px] sm:text-[18px] md:text-[22px] lg:text-[25px] leading-snug tracking-wider"
         >
           {presentation.chineseVerses.map((verse, idx) => {
             const isCnActive = currentTime >= verse.start && currentTime <= verse.end;

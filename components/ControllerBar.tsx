@@ -44,11 +44,11 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
   };
 
   return (
-    <footer className="w-full max-w-6xl mt-3 bg-stone-900/85 border border-stone-800 backdrop-blur rounded-xl p-3 sm:p-4 flex flex-col gap-3 shadow-xl">
+    <footer className="w-full max-w-6xl mt-2 sm:mt-3 bg-stone-900/85 border border-stone-800 backdrop-blur rounded-xl p-2.5 sm:p-4 flex flex-col gap-2 sm:gap-3 shadow-xl">
       
       {/* Timeline Bar */}
-      <div className="flex items-center gap-3 w-full">
-        <span className="text-xs font-mono text-amber-400 w-12 text-right">
+      <div className="flex items-center gap-2 sm:gap-3 w-full">
+        <span className="text-[11px] sm:text-xs font-mono text-amber-400 w-10 sm:w-12 text-right">
           {formatClock(currentTime)}
         </span>
         <div
@@ -64,39 +64,39 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
             </div>
           </div>
         </div>
-        <span className="text-xs font-mono text-stone-400 w-12">
+        <span className="text-[11px] sm:text-xs font-mono text-stone-400 w-10 sm:w-12">
           {formatClock(maxDuration)}
         </span>
       </div>
 
       {/* Controller Action Area */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         
         {/* Play & Speed Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onPlayToggle}
-            className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 hover:from-amber-400 hover:to-amber-200 text-stone-950 flex items-center justify-center text-lg font-bold shadow-lg shadow-amber-900/40 transform hover:scale-105 active:scale-95 transition"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 hover:from-amber-400 hover:to-amber-200 text-stone-950 flex items-center justify-center text-lg font-bold shadow-lg shadow-amber-900/40 transform hover:scale-105 active:scale-95 transition"
             title={isPlaying ? '暫停' : '播放'}
           >
-            {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+            {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />}
           </button>
 
           <button
             onClick={onReset}
-            className="w-10 h-10 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center transition"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center transition"
             title="重播起始"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           {/* Speed Selector */}
-          <div className="flex items-center bg-stone-800 rounded-lg p-1 border border-stone-700 text-xs text-stone-300">
+          <div className="flex items-center bg-stone-800 rounded-lg p-0.5 sm:p-1 border border-stone-700 text-[11px] sm:text-xs text-stone-300">
             {[0.8, 1.0, 1.2].map((s) => (
               <button
                 key={s}
                 onClick={() => onSpeedChange(s)}
-                className={`px-2 py-0.5 rounded transition ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded transition ${
                   playbackRate === s ? 'bg-amber-500/20 text-amber-300 font-bold' : 'hover:text-amber-300'
                 }`}
               >
@@ -107,13 +107,13 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
         </div>
 
         {/* Jump to Section */}
-        <div className="flex items-center gap-1.5 text-xs flex-wrap">
+        <div className="flex items-center gap-1 sm:gap-1.5 text-xs flex-wrap">
           <span className="text-stone-400 hidden sm:inline">跳句:</span>
           {presentation.chineseVerses.map((verse, idx) => (
             <button
               key={verse.id || idx}
               onClick={() => onSeek(verse.start)}
-              className="px-2.5 py-1 rounded bg-stone-800 hover:bg-amber-950 text-stone-300 hover:text-amber-200 border border-stone-700 transition text-[11px]"
+              className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded bg-stone-800 hover:bg-amber-950 text-stone-300 hover:text-amber-200 border border-stone-700 transition text-[10px] sm:text-[11px]"
             >
               第{['一', '二', '三', '四', '五', '六', '七', '八'][idx] || idx + 1}段
             </button>
@@ -122,12 +122,12 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
       </div>
 
       {/* Live Status */}
-      <div className="text-[11px] text-stone-400 flex items-center justify-between border-t border-stone-800 pt-2">
-        <span className="flex items-center gap-1.5">
+      <div className="text-[10px] sm:text-[11px] text-stone-400 flex items-center justify-between border-t border-stone-800 pt-1.5 sm:pt-2 gap-2">
+        <span className="flex items-center gap-1 sm:gap-1.5 truncate">
           <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span>{statusText}</span>
+          <span className="truncate">{statusText}</span>
         </span>
-        <span className="text-stone-400 shrink-0">時長: ~{maxDuration.toFixed(1)} 秒</span>
+        <span className="text-stone-400 shrink-0">~{maxDuration.toFixed(1)} 秒</span>
       </div>
     </footer>
   );
