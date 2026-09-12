@@ -24,7 +24,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
 
   const activeWordRef = useRef<HTMLSpanElement | null>(null);
 
-  // Update active word positions for bouncing lotus ball
+  // Update active word positions for bouncing lotus ball smoothly
   useEffect(() => {
     if (!showLotusMarker || !activeWordRef.current || !viewportRef.current) {
       setLotusPos((prev) => ({ ...prev, visible: false }));
@@ -51,7 +51,9 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
     <main
       ref={viewportRef}
       id="presentation-viewport"
-      className="relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
+      className={`relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between ${
+        !isRealistic ? 'dark-theme' : ''
+      }`}
     >
       {/* Background Layer Selection */}
       {isRealistic ? (
@@ -61,11 +63,6 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
             src={bgImageUrl}
             alt="修行法語背景"
             className="w-full h-full object-cover object-left sm:object-center"
-          />
-          {/* Optional Subtle Warm Glow Overlay */}
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-950/10 to-stone-950/25"
-            style={{ opacity: presentation.overlayOpacity || 0.1 }}
           />
         </div>
       ) : (
@@ -101,7 +98,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       {/* Floating Bouncing Golden Lotus Marker */}
       <div
         id="ktv-lotus-marker"
-        className="bounce-lotus pointer-events-none absolute z-40 transition-all duration-150"
+        className="bounce-lotus pointer-events-none absolute z-40"
         style={{
           left: `${lotusPos.left}px`,
           top: `${lotusPos.top}px`,
@@ -109,7 +106,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         }}
       >
         <div className="relative flex items-center justify-center">
-          <svg className="w-5 h-5 text-amber-500 drop-shadow-[0_0_10px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-5 h-5 text-amber-500 drop-shadow-[0_0_8px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C12 2 7 8 7 13C7 17.5 12 22 12 22C12 22 17 17.5 17 13C17 8 12 2 12 2Z" opacity="0.95" />
           </svg>
           <div className="absolute -inset-1 rounded-full bg-amber-400/50 blur-xs animate-ping pointer-events-none"></div>
@@ -130,9 +127,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
             return (
               <div
                 key={line.id || lineIdx}
-                className={`lyrics-row transition-all duration-300 ${
-                  isRowActive ? 'active-row opacity-100 translate-x-1' : 'opacity-85'
-                }`}
+                className={`lyrics-row ${isRowActive ? 'active-row' : ''}`}
               >
                 {line.words.map((word, wordIdx) => {
                   const isWordActive = currentTime >= word.start && currentTime <= word.end;
@@ -150,26 +145,15 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
                           }
                         }
                       }}
-                      className={`ktv-word relative inline-block mx-[3px] transition-all duration-150 ${
+                      className={`ktv-word ${
                         isWordActive
                           ? isDao
-                            ? 'active-word word-dao font-bold text-sky-500'
-                            : isRealistic
-                            ? 'active-word font-bold text-[#b45309] scale-105 drop-shadow-[0_0_12px_rgba(245,158,11,0.9)]'
-                            : 'active-word font-bold text-[#fef08a] scale-105'
+                            ? 'active-word word-dao'
+                            : 'active-word'
                           : isPast
-                          ? isRealistic
-                            ? 'past-word text-[#1c1917] font-semibold'
-                            : 'past-word text-[#f5f5f4]'
-                          : isRealistic
-                          ? 'text-[#44403c] font-medium'
-                          : 'text-[#78716c]'
+                          ? 'past-word'
+                          : ''
                       }`}
-                      style={{
-                        textShadow: isRealistic && !isWordActive
-                          ? '0 1px 2px rgba(255, 255, 255, 0.6)'
-                          : undefined,
-                      }}
                     >
                       {word.text}
                     </span>
@@ -180,7 +164,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           })}
         </div>
 
-        {/* Golden Lotus Center Ornament (Exact Replica) */}
+        {/* Golden Lotus Center Ornament */}
         <div className="my-1.5 sm:my-3 flex items-center justify-center gap-3 w-full max-w-xl">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-600/70 to-amber-500"></div>
           <div className="text-amber-600 flex items-center px-1">
@@ -213,20 +197,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
             return (
               <div
                 key={verse.id || idx}
-                className={`chinese-row relative transition-all duration-300 ${
-                  isCnActive
-                    ? isRealistic
-                      ? 'active-cn text-[#9a3412] font-bold translate-x-1 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]'
-                      : 'active-cn text-[#fffbeb] font-bold translate-x-1'
-                    : isRealistic
-                    ? 'text-[#292524] font-semibold'
-                    : 'text-[#8c8278]'
-                }`}
-                style={{
-                  textShadow: isRealistic && !isCnActive
-                    ? '0 1px 3px rgba(255, 255, 255, 0.8)'
-                    : undefined,
-                }}
+                className={`chinese-row ${isCnActive ? 'active-cn font-bold' : 'font-semibold'}`}
               >
                 {verse.text}
               </div>
