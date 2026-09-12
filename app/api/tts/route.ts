@@ -94,19 +94,32 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retr
 }
 
 function getClientIp(req: NextRequest): string {
-  const cfConnectingIp = req.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) return cfConnectingIp.trim();
+  // 1. Authoritative Vercel edge header (unspoofable on Vercel deployment)
+  const vercelForwardedFor = req.headers.get('x-vercel-forwarded-for');
+  if (vercelForwardedFor) {
+    const ip = vercelForwardedFor.split(',')[0].trim();
+    if (ip) return ip;
+  }
 
-  const vercelRealIp = req.headers.get('x-vercel-forwarded-for') || req.headers.get('x-real-ip');
-  if (vercelRealIp) return vercelRealIp.trim();
+  // 2. Vercel / Trusted reverse proxy real-ip header
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
 
+  // 3. NextRequest built-in IP property
+  if ((req as any).ip) return (req as any).ip;
+
+  // 4. Standard x-forwarded-for (first entry)
   const xForwardedFor = req.headers.get('x-forwarded-for');
   if (xForwardedFor) {
     const firstIp = xForwardedFor.split(',')[0].trim();
     if (firstIp) return firstIp;
   }
 
-  return (req as any).ip || '127.0.0.1';
+  // 5. Cloudflare header ONLY if behind Cloudflare without preceding Vercel headers
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
+  return '127.0.0.1';
 }
 
 // -------------------------------------------------------------
@@ -152,6 +165,7 @@ async function readJsonWithLimit<T = any>(
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
+  let timer: NodeJS.Timeout | null = null;
 
   const readPromise = (async () => {
     while (true) {
@@ -179,13 +193,12 @@ async function readJsonWithLimit<T = any>(
   })();
 
   const timeoutPromise = new Promise<never>((_, reject) => {
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       try {
         reader.cancel();
       } catch {}
       reject(new Error('READ_TIMEOUT'));
     }, timeoutMs);
-    readPromise.finally(() => clearTimeout(timer));
   });
 
   try {
@@ -214,6 +227,11 @@ async function readJsonWithLimit<T = any>(
         { status: 400 }
       ),
     };
+  } finally {
+    // Guaranteed timer cleanup in awaited try/catch/finally block without dangling promise rejections
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 }
 

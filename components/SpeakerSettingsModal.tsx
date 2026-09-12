@@ -130,7 +130,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
               )}
             </div>
             <p className="text-[11px] text-stone-400">
-              * 若留空並儲存，將安全刪除本機儲存的 Key。若部署於 Vercel，可在環境變數設定 <code className="text-amber-300">GEMINI_API_KEY</code>。
+              * 您的 API Key 僅安全儲存於個人瀏覽器本機，伺服器不保存亦不提供共用金鑰。若留空儲存或點擊「清除」，將立即安全抹除。
             </p>
           </div>
 
