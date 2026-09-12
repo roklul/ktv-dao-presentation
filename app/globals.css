@@ -18,54 +18,59 @@ body {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* KTV Golden Word Highlight Mechanics - Pure & Crisp */
+/* KTV Word Highlight - Sharp & High Contrast on Image Background */
 .ktv-word {
   position: relative;
   display: inline-block;
   margin: 0 3px;
-  color: #78716c;
-  transition: color 0.15s ease, text-shadow 0.2s ease;
+  color: #292524;
+  font-weight: 600;
+  transition: color 0.12s ease-out;
   text-rendering: geometricPrecision;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
 }
 
 .ktv-word.active-word {
-  color: #fef08a !important;
-  font-weight: 700 !important;
-  text-shadow: 0 0 14px rgba(245, 158, 11, 0.95), 0 0 26px rgba(251, 191, 36, 0.7);
+  color: #b45309 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.9), 0 0 20px rgba(251, 191, 36, 0.6) !important;
 }
 
 .ktv-word.past-word {
-  color: #f5f5f4 !important;
-  text-shadow: 0 0 4px rgba(245, 158, 11, 0.25);
+  color: #1c1917 !important;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
 /* Active Line Transitions */
 .lyrics-row {
-  transition: opacity 0.3s ease;
-  opacity: 0.65;
+  transition: opacity 0.25s ease-out;
+  opacity: 0.85;
 }
 .lyrics-row.active-row {
   opacity: 1 !important;
 }
 
 .chinese-row {
-  transition: all 0.35s ease;
-  color: #8c8278;
+  transition: color 0.25s ease-out, opacity 0.25s ease-out;
+  color: #1c1917;
+  font-weight: 600;
   position: relative;
-  opacity: 0.75;
+  opacity: 0.88;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
 }
 .chinese-row.active-cn {
-  color: #fffbeb !important;
-  font-weight: 700;
-  text-shadow: 0 0 14px rgba(217, 119, 6, 0.8), 0 0 26px rgba(251, 191, 36, 0.5);
+  color: #9a3412 !important;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.85), 0 1px 1px rgba(255, 255, 255, 0.6) !important;
   opacity: 1;
 }
 .chinese-row.active-cn::before {
   content: '✦';
   position: absolute;
   left: -20px;
-  color: #f59e0b;
-  font-size: 13px;
+  color: #b45309;
+  font-size: 14px;
   animation: spinLotus 3s linear infinite;
 }
 
@@ -93,22 +98,11 @@ body {
 
 @keyframes hopLotus {
   0% {
-    transform: translateY(0px) scale(0.92);
+    transform: translateY(0px) scale(0.95);
   }
   100% {
     transform: translateY(-8px) scale(1.15);
   }
-}
-
-/* Sunrise Light Beam & Glow */
-.morning-glow {
-  background: radial-gradient(
-    circle at 88% 55%,
-    rgba(254, 215, 170, 0.32) 0%,
-    rgba(245, 158, 11, 0.18) 35%,
-    rgba(120, 53, 15, 0.05) 65%,
-    transparent 100%
-  );
 }
 
 @keyframes fadeIn {
