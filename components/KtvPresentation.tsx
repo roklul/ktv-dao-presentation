@@ -48,13 +48,15 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       id="presentation-viewport"
       className="relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
     >
-      {/* Pristine 16:9 Realistic Background Artwork (No static text) */}
+      {/* Original Master Artwork Background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
           src="/images/jigong-bg.jpg"
-          alt="濟公活佛修行法語背景"
+          alt="濟公活佛修行法語"
           className="w-full h-full object-cover object-left sm:object-center"
         />
+        {/* Soft Warm Dawn Gradient on Right Side to harmonize dynamic KTV text */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f8f1e7]/70 to-[#f8f1e7]/85" />
       </div>
 
       {/* Floating Bouncing Golden Lotus Marker */}
@@ -75,7 +77,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         </div>
       </div>
 
-      {/* Presentation Central Content Box (Positioned on the Serene Right Half) */}
+      {/* Presentation Central Content Box */}
       <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[28%] sm:pl-[34%] md:pl-[36%] pr-3 sm:pr-8 py-3 sm:py-5">
         
         {/* English Verses Container */}
@@ -120,7 +122,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           })}
         </div>
 
-        {/* Golden Lotus Center Ornament (Replicating Original Art) */}
+        {/* Golden Lotus Center Ornament (Exact Replica) */}
         <div className="my-1.5 sm:my-3 flex items-center justify-center gap-3 w-full max-w-xl">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-600/70 to-amber-500"></div>
           <div className="text-amber-600 flex items-center px-1">
