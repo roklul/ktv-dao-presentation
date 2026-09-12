@@ -8,12 +8,10 @@ interface ControllerBarProps {
   currentTime: number;
   duration: number;
   playbackRate: number;
-  showLotusMarker: boolean;
   onPlayToggle: () => void;
   onReset: () => void;
   onSeek: (time: number) => void;
   onSpeedChange: (speed: number) => void;
-  onToggleLotus: () => void;
   statusText: string;
 }
 
@@ -23,12 +21,10 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
   currentTime,
   duration,
   playbackRate,
-  showLotusMarker,
   onPlayToggle,
   onReset,
   onSeek,
   onSpeedChange,
-  onToggleLotus,
   statusText,
 }) => {
   const maxDuration = Math.max(1, duration || presentation.totalDuration || 24.5);
@@ -110,19 +106,6 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
           </div>
         </div>
 
-        {/* KTV Features */}
-        <div className="flex items-center gap-4 text-xs text-stone-300">
-          <label className="flex items-center gap-1.5 cursor-pointer hover:text-amber-300 transition">
-            <input
-              type="checkbox"
-              checked={showLotusMarker}
-              onChange={onToggleLotus}
-              className="rounded border-stone-700 text-amber-500 focus:ring-0 bg-stone-800"
-            />
-            <span>KTV 蓮花跳動導唱</span>
-          </label>
-        </div>
-
         {/* Jump to Section */}
         <div className="flex items-center gap-1.5 text-xs flex-wrap">
           <span className="text-stone-400 hidden sm:inline">跳句:</span>
@@ -130,7 +113,7 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
             <button
               key={verse.id || idx}
               onClick={() => onSeek(verse.start)}
-              className="px-2 py-1 rounded bg-stone-800 hover:bg-amber-950 text-stone-300 hover:text-amber-200 border border-stone-700 transition text-[11px]"
+              className="px-2.5 py-1 rounded bg-stone-800 hover:bg-amber-950 text-stone-300 hover:text-amber-200 border border-stone-700 transition text-[11px]"
             >
               第{['一', '二', '三', '四', '五', '六', '七', '八'][idx] || idx + 1}段
             </button>

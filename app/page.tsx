@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PresentationData, SpeakerSettings } from '../lib/types';
-import { DEFAULT_PRESENTATION, DEFAULT_SPEAKER_SETTINGS, AVAILABLE_VOICES } from '../lib/defaultLyrics';
+import {
+  DEFAULT_PRESENTATION,
+  DEFAULT_SPEAKER_SETTINGS,
+  SPEAKER_1_PRESET,
+  SPEAKER_2_PRESET,
+  AVAILABLE_VOICES,
+} from '../lib/defaultLyrics';
 import { HeaderNav } from '../components/HeaderNav';
 import { KtvPresentation } from '../components/KtvPresentation';
 import { ControllerBar } from '../components/ControllerBar';
@@ -13,14 +19,14 @@ import { Bell } from 'lucide-react';
 
 export default function Home() {
   const [presentation, setPresentation] = useState<PresentationData>(DEFAULT_PRESENTATION);
-  const [speakerSettings, setSpeakerSettings] = useState<SpeakerSettings>(DEFAULT_SPEAKER_SETTINGS);
+  const [speakerSettings, setSpeakerSettings] = useState<SpeakerSettings>(SPEAKER_1_PRESET);
+  const [activePreset, setActivePreset] = useState<'speaker-1' | 'speaker-2' | 'custom'>('speaker-1');
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(DEFAULT_PRESENTATION.totalDuration);
   const [playbackRate, setPlaybackRate] = useState(1.0);
 
-  const [showLotusMarker, setShowLotusMarker] = useState(true);
   const [customAudioLoaded, setCustomAudioLoaded] = useState(true);
 
   const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false);
@@ -28,7 +34,7 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [isGeneratingTts, setIsGeneratingTts] = useState(false);
-  const [statusText, setStatusText] = useState('已備妥濟公活佛修行法語錄音。點擊播放即可沉浸朗讀。');
+  const [statusText, setStatusText] = useState('已備妥 Speaker 1 慈悲女聲。點擊播放即可沉浸朗讀。');
   const [toast, setToast] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -57,7 +63,7 @@ export default function Home() {
     }
   }, []);
 
-  // Load saved API key and settings from localStorage on mount
+  // Load saved API key from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedKey = localStorage.getItem('GEMINI_API_KEY');
@@ -67,7 +73,7 @@ export default function Home() {
     }
   }, []);
 
-  // Fallback Web Speech Synthesis
+  // Fallback Web Speech Synthesis with Speaker 1 / Speaker 2 pitch & rate tuning
   const playWebSpeech = useCallback(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
@@ -84,23 +90,26 @@ export default function Home() {
     const utterance = new SpeechSynthesisUtterance(fullText);
     utterance.lang = 'en-US';
 
-    const voice = AVAILABLE_VOICES.find((v) => v.id === speakerSettings.voiceId);
-    if (voice?.gender === 'male') {
-      utterance.pitch = 0.82;
-      utterance.rate = 0.9 * playbackRate;
+    if (activePreset === 'speaker-2' || speakerSettings.voiceId === 'Charon') {
+      utterance.pitch = 0.78;
+      utterance.rate = 0.88 * playbackRate;
     } else {
-      utterance.pitch = 1.08;
+      utterance.pitch = 1.12;
       utterance.rate = 0.92 * playbackRate;
     }
 
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      const matched = voices.find((v) => v.lang.startsWith('en'));
+      const matched = voices.find((v) =>
+        activePreset === 'speaker-2'
+          ? v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('guy'))
+          : v.lang.startsWith('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha'))
+      );
       if (matched) utterance.voice = matched;
     }
 
     window.speechSynthesis.speak(utterance);
-  }, [presentation, speakerSettings, playbackRate]);
+  }, [presentation, speakerSettings, activePreset, playbackRate]);
 
   // Animation Loop for smooth playback timing
   const startAnimation = useCallback(() => {
@@ -218,6 +227,32 @@ export default function Home() {
     [showToast]
   );
 
+  // Switch between Speaker 1 and Speaker 2 presets
+  const handleSelectSpeakerPreset = (preset: 'speaker-1' | 'speaker-2') => {
+    setActivePreset(preset);
+    const targetPreset = preset === 'speaker-1' ? SPEAKER_1_PRESET : SPEAKER_2_PRESET;
+    setSpeakerSettings((prev) => ({
+      ...targetPreset,
+      customApiKey: prev.customApiKey,
+    }));
+
+    if (preset === 'speaker-1') {
+      setStatusText('已切換為 Speaker 1 (慈悲空靈女聲 · Aoede)，點擊播放或生成。');
+      showToast('已切換至 Speaker 1 (慈悲女聲 · 禪意慢速)');
+    } else {
+      setStatusText('已切換為 Speaker 2 (莊嚴沉穩男聲 · Charon)，點擊播放或生成。');
+      showToast('已切換至 Speaker 2 (莊嚴男聲 · 沉穩慢速)');
+    }
+
+    // Switch default audio track
+    if (audioRef.current) {
+      audioRef.current.src = preset === 'speaker-1' ? '/audio/20260912-2.m4a' : '/audio/2060912.m4a';
+      setCustomAudioLoaded(true);
+      setCurrentTime(0);
+      pauseAudio();
+    }
+  };
+
   // Trigger Gemini TTS generation
   const handleGenerateTts = useCallback(
     async (textOverride?: string) => {
@@ -233,8 +268,9 @@ export default function Home() {
       }
 
       setIsGeneratingTts(true);
-      setStatusText(`正在呼叫 Gemini (${speakerSettings.model}) 生成英文語音...`);
-      showToast('正在透過 Gemini 3.1 Flash TTS 生成語音...');
+      const speakerLabel = activePreset === 'speaker-1' ? 'Speaker 1 (慈悲女聲)' : 'Speaker 2 (莊嚴男聲)';
+      setStatusText(`正在呼叫 Gemini 生成 ${speakerLabel} 語音...`);
+      showToast(`正在透過 Gemini 3.1 TTS 生成 ${speakerLabel} 語音...`);
 
       try {
         const result = await generateGeminiSpeech(englishText, speakerSettings);
@@ -251,8 +287,8 @@ export default function Home() {
 
         setCustomAudioLoaded(true);
         setCurrentTime(0);
-        setStatusText(`Gemini TTS 生成完畢 (${speakerSettings.voiceId})，點擊播放沉浸朗讀。`);
-        showToast(`Gemini TTS 生成成功 (${speakerSettings.voiceId})！`);
+        setStatusText(`Gemini TTS 生成完畢 (${speakerLabel})，點擊播放沉浸朗讀。`);
+        showToast(`Gemini TTS 生成成功 (${speakerLabel})！`);
       } catch (err: any) {
         console.error('Gemini TTS error:', err);
         setStatusText(`TTS 生成提示: ${err.message}`);
@@ -261,15 +297,8 @@ export default function Home() {
         setIsGeneratingTts(false);
       }
     },
-    [presentation, speakerSettings, playbackRate, showToast]
+    [presentation, speakerSettings, activePreset, playbackRate, showToast]
   );
-
-  // Quick Voice Change from Navbar
-  const handleVoiceChange = (newVoiceId: string) => {
-    setSpeakerSettings((prev) => ({ ...prev, voiceId: newVoiceId }));
-    const voiceObj = AVAILABLE_VOICES.find((v) => v.id === newVoiceId);
-    showToast(`已切換音色: ${voiceObj?.name || newVoiceId}`);
-  };
 
   // Preview Voice handler
   const handlePreviewVoice = (voiceId: string) => {
@@ -315,7 +344,8 @@ export default function Home() {
       {/* Top Navigation & Controls */}
       <HeaderNav
         settings={speakerSettings}
-        onVoiceChange={handleVoiceChange}
+        activePreset={activePreset}
+        onSelectSpeakerPreset={handleSelectSpeakerPreset}
         onOpenSpeakerSettings={() => setIsSpeakerModalOpen(true)}
         onOpenScriptEditor={() => setIsScriptModalOpen(true)}
         onToggleFullscreen={handleToggleFullscreen}
@@ -328,7 +358,7 @@ export default function Home() {
       <KtvPresentation
         presentation={presentation}
         currentTime={currentTime}
-        showLotusMarker={showLotusMarker}
+        showLotusMarker={true}
         viewportRef={viewportRef}
       />
 
@@ -339,12 +369,10 @@ export default function Home() {
         currentTime={currentTime}
         duration={duration}
         playbackRate={playbackRate}
-        showLotusMarker={showLotusMarker}
         onPlayToggle={handlePlayToggle}
         onReset={handleReset}
         onSeek={handleSeek}
         onSpeedChange={handleSpeedChange}
-        onToggleLotus={() => setShowLotusMarker(!showLotusMarker)}
         statusText={statusText}
       />
 
@@ -355,7 +383,8 @@ export default function Home() {
         settings={speakerSettings}
         onSave={(newSettings) => {
           setSpeakerSettings(newSettings);
-          showToast('已儲存 Speaker 設定');
+          setActivePreset('custom');
+          showToast('已儲存 Speaker 自訂設定');
         }}
         onPreviewVoice={handlePreviewVoice}
       />

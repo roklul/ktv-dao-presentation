@@ -1,12 +1,9 @@
 import { PresentationData, VoiceOption, SpeakerSettings } from './types';
 
 export const DEFAULT_PRESENTATION: PresentationData = {
-  title: "修行法語 · 濟公活佛 KTV 聲光同步簡報",
-  subtitle: "Self-Cultivation & Dao Practice · Audio-Visual Presentation",
+  title: "修行法語",
+  subtitle: "Self-Cultivation & Dao Practice",
   totalDuration: 24.5,
-  backgroundStyle: "realistic-photo",
-  customBackgroundUrl: "/images/jigong-bg.jpg",
-  overlayOpacity: 0.05,
   englishLines: [
     {
       id: "line-1",
@@ -70,7 +67,7 @@ export const DEFAULT_PRESENTATION: PresentationData = {
       words: [
         { id: "w-5-1", text: "new", start: 10.9, end: 11.2 },
         { id: "w-5-2", text: "to", start: 11.2, end: 11.4 },
-        { id: "w-5-3", text: "Dao", start: 11.4, end: 12.0, isDao: true },
+        { id: "w-5-3", text: "Dao", start: 11.4, end: 12.0 },
         { id: "w-5-4", text: "or", start: 12.0, end: 12.3 },
         { id: "w-5-5", text: "been", start: 12.3, end: 12.6 },
         { id: "w-5-6", text: "many", start: 12.6, end: 13.0 },
@@ -91,7 +88,7 @@ export const DEFAULT_PRESENTATION: PresentationData = {
         { id: "w-6-7", text: "being", start: 16.1, end: 16.5 },
         { id: "w-6-8", text: "in", start: 16.5, end: 16.7 },
         { id: "w-6-9", text: "the", start: 16.7, end: 16.9 },
-        { id: "w-6-10", text: "Dao", start: 16.9, end: 17.5, isDao: true },
+        { id: "w-6-10", text: "Dao", start: 16.9, end: 17.5 },
         { id: "w-6-11", text: "environment", start: 17.5, end: 18.3 },
         { id: "w-6-12", text: "or", start: 18.3, end: 18.5 },
         { id: "w-6-13", text: "not.", start: 18.5, end: 18.9 },
@@ -143,11 +140,27 @@ export const DEFAULT_PRESENTATION: PresentationData = {
   ]
 };
 
-export const PRESET_AUDIO_TRACKS = [
-  { id: 'custom', name: 'Gemini 3.1 Flash TTS (線上即時生成)', url: '' },
-  { id: 'original-1', name: '濟公活佛法語錄音 1 (20260912-2.m4a)', url: '/audio/20260912-2.m4a' },
-  { id: 'original-2', name: '濟公活佛法語錄音 2 (2060912.m4a)', url: '/audio/2060912.m4a' },
-];
+// Speaker 1 Preset: Compassionate Female Voice (慈悲空靈女聲)
+export const SPEAKER_1_PRESET: SpeakerSettings = {
+  model: "gemini-3.1-flash-tts-preview",
+  voiceId: "Aoede",
+  audioProfile: "A compassionate, serene, tranquil Buddhist nun reciting ancient wisdom verses with supreme peace.",
+  style: "calm",
+  pace: "drift",
+  accent: "en-US",
+  activePreset: "speaker-1",
+};
+
+// Speaker 2 Preset: Dignified Male Voice (莊嚴沉穩男聲)
+export const SPEAKER_2_PRESET: SpeakerSettings = {
+  model: "gemini-3.1-flash-tts-preview",
+  voiceId: "Charon",
+  audioProfile: "A deep, resonant, authoritative Zen master and spiritual teacher reciting sacred teachings with gravitas.",
+  style: "meditative",
+  pace: "slow",
+  accent: "en-US",
+  activePreset: "speaker-2",
+};
 
 export const AVAILABLE_VOICES: VoiceOption[] = [
   // Female Voices
@@ -242,12 +255,4 @@ export const AVAILABLE_VOICES: VoiceOption[] = [
   }
 ];
 
-export const DEFAULT_SPEAKER_SETTINGS: SpeakerSettings = {
-  model: "gemini-3.1-flash-tts-preview",
-  voiceId: "Aoede",
-  audioProfile: "A deep, resonant, compassionate Buddhist master and spiritual narrator reciting profound wisdom with tranquility.",
-  style: "calm",
-  pace: "drift",
-  accent: "en-US",
-  customApiKey: ""
-};
+export const DEFAULT_SPEAKER_SETTINGS: SpeakerSettings = SPEAKER_1_PRESET;

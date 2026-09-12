@@ -3,7 +3,6 @@ export interface KtvWord {
   text: string;
   start: number; // in seconds
   end: number;   // in seconds
-  isDao?: boolean;
 }
 
 export interface KtvLine {
@@ -20,17 +19,12 @@ export interface ChineseVerse {
   end: number;
 }
 
-export type BackgroundStyle = 'realistic-photo' | 'dark-svg' | 'custom-image';
-
 export interface PresentationData {
   title: string;
   subtitle: string;
   englishLines: KtvLine[];
   chineseVerses: ChineseVerse[];
   totalDuration: number;
-  backgroundStyle: BackgroundStyle;
-  customBackgroundUrl?: string;
-  overlayOpacity: number; // 0 to 1
 }
 
 export type VoiceGender = 'female' | 'male';
@@ -40,16 +34,17 @@ export interface VoiceOption {
   name: string;
   gender: VoiceGender;
   description: string;
-  pitchTag: string; // e.g., 'Soft, Higher pitch', 'Deep, Resonant'
-  geminiVoiceName: string; // Puck, Charon, Kore, Fenrir, Aoede, etc.
+  pitchTag: string;
+  geminiVoiceName: string;
 }
 
 export interface SpeakerSettings {
-  model: string; // 'gemini-3.1-flash-tts-preview' | 'gemini-2.5-flash' | 'gemini-2.0-flash'
-  voiceId: string; // e.g. 'Aoede'
-  audioProfile: string; // e.g. 'A compassionate and serene spiritual teacher reciting ancient Dao wisdom.'
+  model: string;
+  voiceId: string;
+  audioProfile: string;
   style: 'whisper' | 'calm' | 'cheerful' | 'dramatic' | 'storyteller' | 'meditative';
   pace: 'drift' | 'slow' | 'medium' | 'fast';
   accent: 'en-US' | 'en-GB' | 'en-AU' | 'en-IN';
   customApiKey?: string;
+  activePreset?: 'speaker-1' | 'speaker-2' | 'custom';
 }
