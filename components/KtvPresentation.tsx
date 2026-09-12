@@ -48,11 +48,11 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       id="presentation-viewport"
       className="relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
     >
-      {/* Background Image Layer */}
+      {/* Pristine 16:9 Realistic Background Artwork (No static text) */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
           src="/images/jigong-bg.jpg"
-          alt="修行法語背景圖"
+          alt="濟公活佛修行法語背景"
           className="w-full h-full object-cover object-left sm:object-center"
         />
       </div>
@@ -68,20 +68,20 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         }}
       >
         <div className="relative flex items-center justify-center">
-          <svg className="w-5 h-5 text-amber-500 drop-shadow-[0_0_8px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-5 h-5 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C12 2 7 8 7 13C7 17.5 12 22 12 22C12 22 17 17.5 17 13C17 8 12 2 12 2Z" opacity="0.95" />
           </svg>
           <div className="absolute -inset-1 rounded-full bg-amber-400/50 blur-xs animate-ping pointer-events-none"></div>
         </div>
       </div>
 
-      {/* Presentation Central Content Box */}
-      <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[28%] sm:pl-[34%] md:pl-[35%] pr-3 sm:pr-8 py-3 sm:py-5">
+      {/* Presentation Central Content Box (Positioned on the Serene Right Half) */}
+      <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[28%] sm:pl-[34%] md:pl-[36%] pr-3 sm:pr-8 py-3 sm:py-5">
         
         {/* English Verses Container */}
         <div
           id="english-lyrics-box"
-          className="space-y-1 sm:space-y-1.5 font-serif-en text-[12px] sm:text-[16px] md:text-[20px] lg:text-[22px] leading-snug tracking-wide"
+          className="space-y-1 sm:space-y-1.5 font-serif-en text-[13px] sm:text-[17px] md:text-[21px] lg:text-[23px] leading-snug tracking-wide"
         >
           {presentation.englishLines.map((line, lineIdx) => {
             const isRowActive = currentTime >= line.start && currentTime <= line.end;
@@ -120,12 +120,12 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           })}
         </div>
 
-        {/* Golden Lotus Center Ornament */}
+        {/* Golden Lotus Center Ornament (Replicating Original Art) */}
         <div className="my-1.5 sm:my-3 flex items-center justify-center gap-3 w-full max-w-xl">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-600/70 to-amber-500"></div>
           <div className="text-amber-600 flex items-center px-1">
             <svg
-              className="w-6 h-6 sm:w-9 sm:h-9 text-amber-500 drop-shadow-[0_0_8px_#f59e0b]"
+              className="w-6 h-6 sm:w-9 sm:h-9 text-amber-600 drop-shadow-[0_0_8px_#f59e0b]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -145,7 +145,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
         {/* Traditional Chinese Translation Verses */}
         <div
           id="chinese-lyrics-box"
-          className="space-y-1 text-[12px] sm:text-[16px] md:text-[20px] lg:text-[23px] font-medium tracking-wide font-serif"
+          className="space-y-1 text-[13px] sm:text-[17px] md:text-[21px] lg:text-[23px] font-medium tracking-wide font-serif"
         >
           {presentation.chineseVerses.map((verse, idx) => {
             const isCnActive = currentTime >= verse.start && currentTime <= verse.end;
@@ -153,7 +153,7 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
             return (
               <div
                 key={verse.id || idx}
-                className={`chinese-row ${isCnActive ? 'active-cn font-bold' : ''}`}
+                className={`chinese-row ${isCnActive ? 'active-cn' : ''}`}
               >
                 {verse.text}
               </div>
