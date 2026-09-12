@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PresentationData, SpeakerSettings, BackgroundStyle } from '../lib/types';
-import { DEFAULT_PRESENTATION, DEFAULT_SPEAKER_SETTINGS, AVAILABLE_VOICES, PRESET_AUDIO_TRACKS } from '../lib/defaultLyrics';
+import { PresentationData, SpeakerSettings } from '../lib/types';
+import { DEFAULT_PRESENTATION, DEFAULT_SPEAKER_SETTINGS, AVAILABLE_VOICES } from '../lib/defaultLyrics';
 import { HeaderNav } from '../components/HeaderNav';
 import { KtvPresentation } from '../components/KtvPresentation';
 import { ControllerBar } from '../components/ControllerBar';
@@ -22,14 +22,13 @@ export default function Home() {
 
   const [showLotusMarker, setShowLotusMarker] = useState(true);
   const [customAudioLoaded, setCustomAudioLoaded] = useState(true);
-  const [selectedAudioTrack, setSelectedAudioTrack] = useState('original-1');
 
   const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [isGeneratingTts, setIsGeneratingTts] = useState(false);
-  const [statusText, setStatusText] = useState('已載入濟公活佛修行法語 (20260912-2.m4a)。點擊播放即可沉浸朗讀。');
+  const [statusText, setStatusText] = useState('已備妥濟公活佛修行法語錄音。點擊播放即可沉浸朗讀。');
   const [toast, setToast] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -219,75 +218,6 @@ export default function Home() {
     [showToast]
   );
 
-  // Switch Audio Source from dropdown
-  const handleAudioTrackSelect = useCallback(
-    (trackId: string) => {
-      setSelectedAudioTrack(trackId);
-      const track = PRESET_AUDIO_TRACKS.find((t) => t.id === trackId);
-      if (track && track.url) {
-        if (audioRef.current) {
-          audioRef.current.src = track.url;
-          audioRef.current.playbackRate = playbackRate;
-          audioRef.current.onloadedmetadata = () => {
-            if (audioRef.current?.duration && !isNaN(audioRef.current.duration)) {
-              setDuration(audioRef.current.duration);
-            }
-          };
-        }
-        setCustomAudioLoaded(true);
-        setCurrentTime(0);
-        pauseAudio();
-        setStatusText(`已切換至音檔: ${track.name}`);
-        showToast(`已載入: ${track.name}`);
-      }
-    },
-    [playbackRate, pauseAudio, showToast]
-  );
-
-  // Handle Custom Audio File Upload
-  const handleAudioFileUpload = useCallback(
-    (file: File) => {
-      const url = URL.createObjectURL(file);
-      if (audioRef.current) {
-        audioRef.current.src = url;
-        audioRef.current.playbackRate = playbackRate;
-        audioRef.current.onloadedmetadata = () => {
-          if (audioRef.current?.duration && !isNaN(audioRef.current.duration)) {
-            setDuration(audioRef.current.duration);
-          }
-        };
-      }
-      setCustomAudioLoaded(true);
-      setCurrentTime(0);
-      pauseAudio();
-      const shortName = file.name.length > 20 ? file.name.substring(0, 18) + '...' : file.name;
-      setStatusText(`已載入自訂音檔: ${shortName}`);
-      showToast(`已載入音檔: ${file.name}`);
-    },
-    [playbackRate, pauseAudio, showToast]
-  );
-
-  // Switch Background Style
-  const handleBackgroundStyleChange = (style: BackgroundStyle) => {
-    setPresentation((prev) => ({
-      ...prev,
-      backgroundStyle: style,
-      customBackgroundUrl: style === 'realistic-photo' ? '/images/jigong-bg.jpg' : prev.customBackgroundUrl,
-    }));
-    showToast(`背景風格切換為: ${style === 'realistic-photo' ? '典雅名畫背景' : '暗黑禪意向量風'}`);
-  };
-
-  // Upload Custom Background Image
-  const handleCustomImageUpload = (file: File) => {
-    const url = URL.createObjectURL(file);
-    setPresentation((prev) => ({
-      ...prev,
-      backgroundStyle: 'custom-image',
-      customBackgroundUrl: url,
-    }));
-    showToast(`已更新自訂背景圖片: ${file.name}`);
-  };
-
   // Trigger Gemini TTS generation
   const handleGenerateTts = useCallback(
     async (textOverride?: string) => {
@@ -320,7 +250,6 @@ export default function Home() {
         }
 
         setCustomAudioLoaded(true);
-        setSelectedAudioTrack('custom');
         setCurrentTime(0);
         setStatusText(`Gemini TTS 生成完畢 (${speakerSettings.voiceId})，點擊播放沉浸朗讀。`);
         showToast(`Gemini TTS 生成成功 (${speakerSettings.voiceId})！`);
@@ -386,15 +315,9 @@ export default function Home() {
       {/* Top Navigation & Controls */}
       <HeaderNav
         settings={speakerSettings}
-        backgroundStyle={presentation.backgroundStyle}
-        onBackgroundStyleChange={handleBackgroundStyleChange}
-        onCustomImageUpload={handleCustomImageUpload}
-        selectedAudioTrack={selectedAudioTrack}
-        onAudioTrackSelect={handleAudioTrackSelect}
         onVoiceChange={handleVoiceChange}
         onOpenSpeakerSettings={() => setIsSpeakerModalOpen(true)}
         onOpenScriptEditor={() => setIsScriptModalOpen(true)}
-        onAudioFileUpload={handleAudioFileUpload}
         onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
         isGeneratingTts={isGeneratingTts}

@@ -1,19 +1,12 @@
-import React, { useRef } from 'react';
-import { SpeakerSettings, BackgroundStyle } from '../lib/types';
-import { AVAILABLE_VOICES, PRESET_AUDIO_TRACKS } from '../lib/defaultLyrics';
-import { Sparkles, Sliders, Edit3, Upload, Maximize2, Minimize2, Mic, Image, Music } from 'lucide-react';
+import React from 'react';
+import { SpeakerSettings } from '../lib/types';
+import { Sparkles, Sliders, Edit3, Maximize2, Minimize2, Mic } from 'lucide-react';
 
 interface HeaderNavProps {
   settings: SpeakerSettings;
-  backgroundStyle: BackgroundStyle;
-  onBackgroundStyleChange: (style: BackgroundStyle) => void;
-  onCustomImageUpload: (file: File) => void;
-  selectedAudioTrack: string;
-  onAudioTrackSelect: (trackId: string) => void;
   onVoiceChange: (voiceId: string) => void;
   onOpenSpeakerSettings: () => void;
   onOpenScriptEditor: () => void;
-  onAudioFileUpload: (file: File) => void;
   onToggleFullscreen: () => void;
   isFullscreen: boolean;
   isGeneratingTts: boolean;
@@ -22,37 +15,14 @@ interface HeaderNavProps {
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
   settings,
-  backgroundStyle,
-  onBackgroundStyleChange,
-  onCustomImageUpload,
-  selectedAudioTrack,
-  onAudioTrackSelect,
   onVoiceChange,
   onOpenSpeakerSettings,
   onOpenScriptEditor,
-  onAudioFileUpload,
   onToggleFullscreen,
   isFullscreen,
   isGeneratingTts,
   onGenerateTts,
 }) => {
-  const audioFileInputRef = useRef<HTMLInputElement>(null);
-  const imgFileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onAudioFileUpload(file);
-    }
-  };
-
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onCustomImageUpload(file);
-    }
-  };
-
   return (
     <header className="w-full max-w-6xl mb-3 flex flex-wrap items-center justify-between gap-3 px-2">
       {/* Title & Brand */}
@@ -74,62 +44,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         </div>
       </div>
 
-      {/* Actions & Voice Controls */}
+      {/* Clean & Streamlined Actions */}
       <div className="flex items-center gap-2 flex-wrap text-xs">
         
-        {/* Background Style Switcher */}
-        <div className="relative inline-flex items-center">
-          <span className="absolute left-2.5 text-amber-400 text-xs pointer-events-none">
-            <Image className="w-3.5 h-3.5" />
-          </span>
-          <select
-            value={backgroundStyle}
-            onChange={(e) => {
-              const val = e.target.value as BackgroundStyle;
-              if (val === 'custom-image') {
-                imgFileInputRef.current?.click();
-              } else {
-                onBackgroundStyleChange(val);
-              }
-            }}
-            className="appearance-none bg-stone-900/90 text-amber-200 border border-amber-500/40 pl-7 pr-7 py-1.5 rounded-full text-xs font-medium cursor-pointer focus:outline-none focus:border-amber-400 hover:bg-stone-800 transition shadow"
-            title="切換背景風格"
-          >
-            <option value="realistic-photo">典雅名畫背景 (Realistic)</option>
-            <option value="dark-svg">暗黑禪意向量風 (Vector SVG)</option>
-            <option value="custom-image">自訂背景圖 (Upload Image...)</option>
-          </select>
-          <span className="absolute right-2 text-stone-400 text-[10px] pointer-events-none">▼</span>
-          <input
-            ref={imgFileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageFileChange}
-            className="hidden"
-          />
-        </div>
-
-        {/* Audio Track / Source Preset Selector */}
-        <div className="relative inline-flex items-center">
-          <span className="absolute left-2.5 text-amber-400 text-xs pointer-events-none">
-            <Music className="w-3.5 h-3.5" />
-          </span>
-          <select
-            value={selectedAudioTrack}
-            onChange={(e) => onAudioTrackSelect(e.target.value)}
-            className="appearance-none bg-stone-900/90 text-amber-200 border border-amber-500/40 pl-7 pr-7 py-1.5 rounded-full text-xs font-medium cursor-pointer focus:outline-none focus:border-amber-400 hover:bg-stone-800 transition shadow"
-            title="切換音訊來源"
-          >
-            {PRESET_AUDIO_TRACKS.map((track) => (
-              <option key={track.id} value={track.id}>
-                {track.name}
-              </option>
-            ))}
-          </select>
-          <span className="absolute right-2 text-stone-400 text-[10px] pointer-events-none">▼</span>
-        </div>
-
-        {/* Voice Selector for TTS */}
+        {/* Quick Voice Selector (Male / Female) */}
         <div className="relative inline-flex items-center">
           <span className="absolute left-2.5 text-amber-400 text-xs pointer-events-none">
             <Mic className="w-3.5 h-3.5" />
@@ -137,7 +55,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           <select
             value={settings.voiceId}
             onChange={(e) => onVoiceChange(e.target.value)}
-            className="appearance-none bg-stone-900/90 text-amber-200 border border-amber-500/40 pl-7 pr-7 py-1.5 rounded-full text-xs font-medium cursor-pointer focus:outline-none focus:border-amber-400 hover:bg-stone-800 transition shadow"
+            className="appearance-none bg-stone-900/90 text-amber-200 border border-amber-500/40 pl-7 pr-8 py-1.5 rounded-full text-xs font-medium cursor-pointer focus:outline-none focus:border-amber-400 hover:bg-stone-800 transition shadow"
             title="選擇 Gemini 發音音色"
           >
             <optgroup label="── 女聲 (Female) ──" className="bg-stone-900 text-rose-300">
@@ -155,21 +73,21 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               <option value="Algenib">滄桑醇厚男聲 (Algenib)</option>
             </optgroup>
           </select>
-          <span className="absolute right-2 text-stone-400 text-[10px] pointer-events-none">▼</span>
+          <span className="absolute right-2.5 text-stone-400 text-[10px] pointer-events-none">▼</span>
         </div>
 
         {/* Generate Gemini 3.1 TTS Button */}
         <button
           onClick={onGenerateTts}
           disabled={isGeneratingTts}
-          className="bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/40 text-amber-200 border border-amber-500/50 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition text-xs shadow disabled:opacity-50"
+          className="bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/40 text-amber-200 border border-amber-500/50 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition text-xs shadow disabled:opacity-50"
           title="透過 Gemini 3.1 Flash TTS 生成語音"
         >
           <Sparkles className={`w-3.5 h-3.5 text-amber-300 ${isGeneratingTts ? 'animate-spin' : ''}`} />
           <span>{isGeneratingTts ? '生成中...' : 'Gemini 3.1 TTS'}</span>
         </button>
 
-        {/* Speaker Settings Button */}
+        {/* Speaker Settings Button (Google AI Studio Panel) */}
         <button
           onClick={onOpenSpeakerSettings}
           className="bg-stone-900/90 hover:bg-stone-800 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 shadow"
@@ -179,28 +97,15 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           <span className="hidden sm:inline">發音調校</span>
         </button>
 
-        {/* Edit Script & Translations Button */}
+        {/* Edit Script & Markdown Import Button */}
         <button
           onClick={onOpenScriptEditor}
-          className="bg-stone-900/90 hover:bg-stone-800 text-stone-300 border border-stone-700 px-3 py-1.5 rounded-full text-xs transition flex items-center gap-1.5"
-          title="自訂英文法語與中文翻譯"
+          className="bg-stone-900/90 hover:bg-stone-800 text-stone-200 border border-stone-700 px-3 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 shadow"
+          title="自訂法語與 Markdown 匯入"
         >
           <Edit3 className="w-3.5 h-3.5 text-stone-400" />
           <span className="hidden sm:inline">自訂法語</span>
         </button>
-
-        {/* Upload Audio File */}
-        <label className="cursor-pointer bg-stone-900/90 hover:bg-stone-800 text-stone-300 border border-stone-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition text-xs shadow">
-          <Upload className="w-3.5 h-3.5 text-amber-400" />
-          <span>載入音檔</span>
-          <input
-            ref={audioFileInputRef}
-            type="file"
-            accept="audio/*,.wav,.mp3,.aac,.m4a"
-            onChange={handleAudioFileChange}
-            className="hidden"
-          />
-        </label>
 
         {/* Fullscreen Button */}
         <button

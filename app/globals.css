@@ -18,85 +18,55 @@ body {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* KTV Word Highlight - Crisp & Ghosting-Free */
+/* KTV Golden Word Highlight Mechanics - Pure & Crisp */
 .ktv-word {
   position: relative;
   display: inline-block;
-  margin: 0 2.5px;
-  color: #57534e;
-  transition: color 0.12s ease-out;
+  margin: 0 3px;
+  color: #78716c;
+  transition: color 0.15s ease, text-shadow 0.2s ease;
   text-rendering: geometricPrecision;
 }
 
 .ktv-word.active-word {
-  color: #d97706 !important;
+  color: #fef08a !important;
   font-weight: 700 !important;
-  text-shadow: 0 0 10px rgba(245, 158, 11, 0.85);
+  text-shadow: 0 0 14px rgba(245, 158, 11, 0.95), 0 0 26px rgba(251, 191, 36, 0.7);
 }
 
 .ktv-word.past-word {
-  color: #1c1917 !important;
-  font-weight: 600;
-}
-
-/* Dark Mode / Dark Vector SVG Fallback Colors */
-.dark-theme .ktv-word {
-  color: #78716c;
-}
-
-.dark-theme .ktv-word.active-word {
-  color: #fef08a !important;
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
-}
-
-.dark-theme .ktv-word.past-word {
   color: #f5f5f4 !important;
+  text-shadow: 0 0 4px rgba(245, 158, 11, 0.25);
 }
 
-/* Special "Dao" Flare */
-.ktv-word.word-dao.active-word {
-  color: #0284c7 !important;
-  font-weight: 800 !important;
-  text-shadow: 0 0 14px rgba(56, 189, 248, 0.9) !important;
-}
-
-/* Active Line Transitions - No Layout Shift / Jitter */
+/* Active Line Transitions */
 .lyrics-row {
-  transition: opacity 0.25s ease-out;
-  opacity: 0.75;
+  transition: opacity 0.3s ease;
+  opacity: 0.65;
 }
 .lyrics-row.active-row {
   opacity: 1 !important;
 }
 
 .chinese-row {
-  transition: color 0.25s ease-out, opacity 0.25s ease-out;
-  color: #44403c;
+  transition: all 0.35s ease;
+  color: #8c8278;
   position: relative;
-  opacity: 0.85;
+  opacity: 0.75;
 }
 .chinese-row.active-cn {
-  color: #9a3412 !important;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.75);
+  color: #fffbeb !important;
+  font-weight: 700;
+  text-shadow: 0 0 14px rgba(217, 119, 6, 0.8), 0 0 26px rgba(251, 191, 36, 0.5);
   opacity: 1;
 }
 .chinese-row.active-cn::before {
   content: '✦';
   position: absolute;
   left: -20px;
-  color: #d97706;
+  color: #f59e0b;
   font-size: 13px;
   animation: spinLotus 3s linear infinite;
-}
-
-.dark-theme .chinese-row {
-  color: #8c8278;
-}
-
-.dark-theme .chinese-row.active-cn {
-  color: #fffbeb !important;
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
 }
 
 @keyframes spinLotus {
@@ -112,7 +82,7 @@ body {
 #ktv-lotus-marker {
   position: absolute;
   pointer-events: none;
-  transition: left 0.15s cubic-bezier(0.25, 1, 0.5, 1), top 0.15s ease-out, opacity 0.2s;
+  transition: left 0.18s cubic-bezier(0.25, 1, 0.5, 1), top 0.18s ease-out, opacity 0.2s;
   z-index: 45;
   will-change: left, top;
 }
@@ -123,10 +93,10 @@ body {
 
 @keyframes hopLotus {
   0% {
-    transform: translateY(0px) scale(0.95);
+    transform: translateY(0px) scale(0.92);
   }
   100% {
-    transform: translateY(-8px) scale(1.12);
+    transform: translateY(-8px) scale(1.15);
   }
 }
 
