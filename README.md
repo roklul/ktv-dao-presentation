@@ -12,7 +12,7 @@
    - 純淨 16:9 濟公活佛名畫背景，右側晨曦宣紙融合，徹底解決疊字殘影。
 
 2. **雙 Speaker 預載母帶 & Gemini 3.1 Flash TTS 語音工作室**：
-   - **免 API 額度快速聆聽**：預載 Speaker 1 (慈悲女聲) 與 Speaker 2 (莊嚴男聲) 母帶音訊，一般訪客無需 API Key 即可自由聆聽。
+   - **免 API 額度快速聆聽**：預載 Speaker 1 (慈悲女聲) 與 Speaker 2 (莊嚴女聲) 母帶音訊，一般訪客無需 API Key 即可自由聆聽。
    - **Google AI Studio 級別調校**：支援 `gemini-3.1-flash-tts-preview`，13 組男女聲音色庫（Aoede, Kore, Charon, Puck, Fenrir, Algieba 等）。
    - **Director's note 導演筆記**：提供 Style（Whisper / Calm / Meditative / Storyteller）、Pace（The Drift / Slow / Medium / Fast）、Accent（US / GB / AU / IN）精細調校。
 

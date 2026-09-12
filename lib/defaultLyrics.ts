@@ -151,11 +151,11 @@ export const SPEAKER_1_PRESET: SpeakerSettings = {
   activePreset: "speaker-1",
 };
 
-// Speaker 2 Preset: Dignified Male Voice (莊嚴沉穩男聲)
+// Speaker 2 Preset: Dignified Female Voice (莊嚴祥和女聲)
 export const SPEAKER_2_PRESET: SpeakerSettings = {
   model: "gemini-3.1-flash-tts-preview",
-  voiceId: "Charon",
-  audioProfile: "A deep, resonant, authoritative Zen master and spiritual teacher reciting sacred teachings with gravitas.",
+  voiceId: "Kore",
+  audioProfile: "A dignified, serene, and warm spiritual teacher reciting sacred wisdom verses with clarity, poise and reverent peace.",
   style: "meditative",
   pace: "slow",
   accent: "en-US",

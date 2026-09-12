@@ -90,8 +90,8 @@ export default function Home() {
     const utterance = new SpeechSynthesisUtterance(fullText);
     utterance.lang = 'en-US';
 
-    if (activePreset === 'speaker-2' || speakerSettings.voiceId === 'Charon') {
-      utterance.pitch = 0.78;
+    if (activePreset === 'speaker-2' || speakerSettings.voiceId === 'Kore') {
+      utterance.pitch = 0.95; // Slightly deeper, dignified female pitch
       utterance.rate = 0.88 * playbackRate;
     } else {
       utterance.pitch = 1.12;
@@ -101,9 +101,7 @@ export default function Home() {
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
       const matched = voices.find((v) =>
-        activePreset === 'speaker-2'
-          ? v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('guy'))
-          : v.lang.startsWith('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha'))
+        v.lang.startsWith('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha'))
       );
       if (matched) utterance.voice = matched;
     }
@@ -240,8 +238,8 @@ export default function Home() {
       setStatusText('已切換為 Speaker 1 (慈悲空靈女聲 · Aoede)，點擊播放或生成。');
       showToast('已切換至 Speaker 1 (慈悲女聲 · 禪意慢速)');
     } else {
-      setStatusText('已切換為 Speaker 2 (莊嚴沉穩男聲 · Charon)，點擊播放或生成。');
-      showToast('已切換至 Speaker 2 (莊嚴男聲 · 沉穩慢速)');
+      setStatusText('已切換為 Speaker 2 (莊嚴祥和女聲 · Kore)，點擊播放或生成。');
+      showToast('已切換至 Speaker 2 (莊嚴女聲 · 沉穩慢速)');
     }
 
     // Switch default audio track
@@ -268,7 +266,7 @@ export default function Home() {
       }
 
       setIsGeneratingTts(true);
-      const speakerLabel = activePreset === 'speaker-1' ? 'Speaker 1 (慈悲女聲)' : 'Speaker 2 (莊嚴男聲)';
+      const speakerLabel = activePreset === 'speaker-1' ? 'Speaker 1 (慈悲女聲)' : 'Speaker 2 (莊嚴女聲)';
       setStatusText(`正在呼叫 Gemini 生成 ${speakerLabel} 語音...`);
       showToast(`正在透過 Gemini 3.1 TTS 生成 ${speakerLabel} 語音...`);
 

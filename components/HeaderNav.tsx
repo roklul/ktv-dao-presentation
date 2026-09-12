@@ -67,15 +67,15 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             onClick={() => onSelectSpeakerPreset('speaker-2')}
             className={`px-3 py-1 rounded-full font-medium transition flex items-center gap-1.5 ${
               activePreset === 'speaker-2'
-                ? 'bg-gradient-to-r from-sky-900/80 to-amber-900/80 text-sky-200 border border-sky-500/50 shadow-[0_0_10px_rgba(56,189,248,0.3)]'
+                ? 'bg-gradient-to-r from-purple-900/80 to-amber-900/80 text-purple-200 border border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
                 : 'text-stone-400 hover:text-stone-200'
             }`}
-            title="Speaker 2: 莊嚴厚重男聲 (Charon / Meditative / Slow 沉穩慢速)"
+            title="Speaker 2: 莊嚴祥和女聲 (Kore / Meditative / Slow 沉穩慢速)"
           >
-            <span className="w-4 h-4 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold flex items-center justify-center border border-sky-500/40">
+            <span className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold flex items-center justify-center border border-purple-500/40">
               2
             </span>
-            <span>Speaker 2 (莊嚴男聲)</span>
+            <span>Speaker 2 (莊嚴女聲)</span>
           </button>
         </div>
 
