@@ -23,6 +23,7 @@ interface ScriptEditorModalProps {
   currentPresentation: PresentationData;
   onApply: (newPresentation: PresentationData) => void;
   onTriggerTtsGeneration: (text: string) => void;
+  isGeneratingTts?: boolean;
 }
 
 interface ScriptLine {
@@ -52,6 +53,7 @@ export const ScriptEditorModal: React.FC<ScriptEditorModalProps> = ({
   currentPresentation,
   onApply,
   onTriggerTtsGeneration,
+  isGeneratingTts = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'markdown' | 'cards'>('markdown');
   const [mdContent, setMdContent] = useState('');
@@ -255,6 +257,10 @@ export const ScriptEditorModal: React.FC<ScriptEditorModalProps> = ({
     onApply(updatedPresentation);
 
     if (triggerGenerate) {
+      if (isGeneratingTts) {
+        onClose();
+        return;
+      }
       onTriggerTtsGeneration(fullEnText);
     }
     onClose();
@@ -485,10 +491,11 @@ export const ScriptEditorModal: React.FC<ScriptEditorModalProps> = ({
             </button>
             <button
               onClick={() => handleApply(true)}
-              className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 shadow-lg shadow-amber-900/30 flex items-center gap-1.5 transition"
+              disabled={isGeneratingTts}
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 shadow-lg shadow-amber-900/30 flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              套用並生成 Gemini 3.1 語音
+              <Sparkles className={`w-3.5 h-3.5 ${isGeneratingTts ? 'animate-spin' : ''}`} />
+              {isGeneratingTts ? '語音生成中...' : '套用並生成 Gemini 3.1 語音'}
             </button>
           </div>
         </div>

@@ -24,6 +24,12 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
   const [voiceSearch, setVoiceSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState<'all' | 'female' | 'male'>('all');
   const [showKey, setShowKey] = useState(false);
+  const [rememberKey, setRememberKey] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('GEMINI_API_KEY');
+    }
+    return false;
+  });
 
   if (!isOpen) return null;
 
@@ -41,8 +47,8 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
     const updatedSettings = { ...localSettings, customApiKey: cleanedKey };
     onSave(updatedSettings);
 
-    // Securely handle localStorage persistence: remove item if empty
-    if (cleanedKey.length > 0) {
+    // Security Hardening: Only persist to localStorage if user explicitly opts in with rememberKey
+    if (rememberKey && cleanedKey.length > 0) {
       localStorage.setItem('GEMINI_API_KEY', cleanedKey);
     } else {
       localStorage.removeItem('GEMINI_API_KEY');
@@ -52,6 +58,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
 
   const handleClearKey = () => {
     setLocalSettings((prev) => ({ ...prev, customApiKey: '' }));
+    setRememberKey(false);
     localStorage.removeItem('GEMINI_API_KEY');
     if (onClearKey) {
       onClearKey();
@@ -129,8 +136,26 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Remember Key Checkbox (Security: Default to memory-only unless explicitly checked) */}
+            <div className="flex items-center gap-2 pt-0.5">
+              <input
+                type="checkbox"
+                id="remember-key-checkbox"
+                checked={rememberKey}
+                onChange={(e) => setRememberKey(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-stone-700 bg-stone-950 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+              />
+              <label
+                htmlFor="remember-key-checkbox"
+                className="text-[11px] text-stone-300 hover:text-amber-200 cursor-pointer select-none"
+              >
+                記住在本機瀏覽器（若未勾選，僅存於本次瀏覽記憶體中，關閉分頁後即清除）
+              </label>
+            </div>
+
             <p className="text-[11px] text-stone-400">
-              * 您的 API Key 僅安全儲存於個人瀏覽器本機，伺服器不保存亦不提供共用金鑰。若留空儲存或點擊「清除」，將立即安全抹除。
+              * 您的 API Key 不會長期存放於伺服器。若留空儲存或點擊「清除」，將立即安全抹除。
             </p>
           </div>
 

@@ -42,6 +42,7 @@ export default function Home() {
   const animFrameRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isGeneratingRef = useRef<boolean>(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -251,9 +252,15 @@ export default function Home() {
     }
   };
 
-  // Trigger Gemini TTS generation
+  // Trigger Gemini TTS generation with concurrency lock
   const handleGenerateTts = useCallback(
     async (textOverride?: string) => {
+      // Concurrency lock to block parallel submissions and duplicate billing
+      if (isGeneratingRef.current) {
+        showToast('語音生成進行中，請稍候完成...');
+        return;
+      }
+
       const englishText =
         textOverride ||
         presentation.englishLines
@@ -265,6 +272,7 @@ export default function Home() {
         return;
       }
 
+      isGeneratingRef.current = true;
       setIsGeneratingTts(true);
       const speakerLabel = activePreset === 'speaker-1' ? 'Speaker 1 (慈悲女聲)' : 'Speaker 2 (莊嚴女聲)';
       setStatusText(`正在呼叫 Gemini 生成 ${speakerLabel} 語音...`);
@@ -292,6 +300,7 @@ export default function Home() {
         setStatusText(`TTS 生成提示: ${err.message}`);
         showToast(`生成失敗: ${err.message}`);
       } finally {
+        isGeneratingRef.current = false;
         setIsGeneratingTts(false);
       }
     },
@@ -396,6 +405,7 @@ export default function Home() {
         isOpen={isScriptModalOpen}
         onClose={() => setIsScriptModalOpen(false)}
         currentPresentation={presentation}
+        isGeneratingTts={isGeneratingTts}
         onApply={(newPres) => {
           setPresentation(newPres);
           setDuration(newPres.totalDuration);

@@ -54,6 +54,9 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 const MAX_REQUESTS_PER_WINDOW = 10; // Max 10 requests per minute per IP
 const MAX_MAP_ENTRIES = 5000; // LRU/Cap protection against memory inflation
 
+// In-flight active request tracker to prevent parallel duplicate calls from same IP
+const activeRequestsByIp = new Set<string>();
+
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retryAfterSec: number } {
   const now = Date.now();
 
@@ -256,12 +259,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 1.1 In-flight concurrent request check (prevent duplicate parallel billable requests from same IP)
+  if (activeRequestsByIp.has(clientIp)) {
+    return NextResponse.json(
+      {
+        error: '已有語音生成請求處理中，請等待前一筆完成後再提交，避免重複計費。',
+        code: 'CONCURRENT_REQUEST_BLOCKED',
+      },
+      { status: 409 }
+    );
+  }
+
   // 2. Safe JSON Body Parsing with Size & Timeout Limits
   const { data: body, errorResponse } = await readJsonWithLimit(req);
   if (errorResponse) {
     return errorResponse;
   }
 
+  activeRequestsByIp.add(clientIp);
   const controller = new AbortController();
   // 15-second total lifecycle timeout covering upstream fetch and serialization
   const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -350,9 +365,8 @@ ${paceInstructionMap[safePace] || paceInstructionMap.drift}
 Accent preference: ${safeAccent}.
 IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance, and spiritual poise. Do not include any commentary.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${encodeURIComponent(
-      userApiKey
-    )}`;
+    // Clean endpoint URL without query parameters to prevent key leakage in URLs/access logs
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`;
 
     const payload = {
       contents: [
@@ -388,6 +402,7 @@ IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': userApiKey,
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
@@ -460,6 +475,7 @@ IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance,
     console.error('TTS API error:', error);
     return NextResponse.json({ error: error.message || '內部伺服器錯誤' }, { status: 500 });
   } finally {
+    activeRequestsByIp.delete(clientIp);
     clearTimeout(timeoutId);
   }
 }

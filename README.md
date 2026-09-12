@@ -20,12 +20,24 @@
    - 支援 `.md` 格式匯入與「上英下中」翻譯指引。
    - 內建智慧時間軸對齊演算法，自動計算每個單詞的 KTV 停留時間。
 
-4. **🛡️ 企業級零信任資安架構**：
-   - **零信任 Client Key**：伺服器不保存亦不提供共用金鑰，使用者金鑰僅存放於瀏覽器本機並支援一鍵即時清除。
+4. **🛡️ 企業級零信任資安與費用防護架構**：
+   - **零信任 Client Key 與記憶體優先儲存**：伺服器不保存亦不提供共用金鑰。預設僅存於瀏覽器當次記憶體中，使用者可自主勾選是否記住在本機，支援一鍵即時清除。
+   - **HTTP Header 金鑰傳輸 (`x-goog-api-key`)**：與 Google API 通訊時將金鑰存放於 HTTP 標頭而非網址查詢字串，杜絕伺服器日誌與代理存取記綠外洩金鑰。
+   - **防重複提交與雙端並發鎖 (Concurrency Lock)**：前端按鈕與處理函式具備原子鎖，API 端實作同 IP 在線併發阻斷（409 Conflict），杜絕重複點擊或多視窗併發產生的重複計費與資源浪費。
    - **假 Key 零延遲攔截**：正則式 `^AIzaSy[A-Za-z0-9_-]{33}$` 格式預驗證，0ms 阻擋偽造金鑰，杜絕無效上游請求。
    - **輸入串流保護**：16 KB 硬性上限與 3 秒獨立讀取逾時（防護 Slowloris 與記憶體耗盡）。
    - **全週期逾時**：15 秒 `AbortController` 完整涵蓋網路傳輸與反序列化。
    - **應用層限流 & Vercel WAF 整合**：內建滑動窗口限流（每 IP 每分鐘 10 次）並支援 Vercel WAF 限流規則。
+
+---
+
+## 💰 費用控制與帳單安全指南 (Spend Management)
+
+1. **Google Cloud / AI Studio 費用控制**：
+   - **免費方案 (Free Tier)**：預設使用未綁定信用卡之 Google AI Studio Key，每分鐘享有 15 次免費請求，超過僅收到 429 限制，**保證 0 費用**。
+   - **付費方案預算上限 (Project Spend Caps)**：若綁定了付費專案，建議在 [Google Cloud Billing 預算控制台](https://console.cloud.google.com/billing) 設定 **預算警報 (Budgets & Alerts)** 與每日/每月花費上限，防止非預期用量。
+2. **Vercel 方案用量保護**：
+   - 在 Vercel Project → **Settings** → **Billing** / **Spend Management** 啟用自動通知或用量暫停，防止流量異常暴增。
 
 ---
 
