@@ -1,0 +1,82 @@
+# 修行法語 · 濟公活佛 KTV 聲光同步簡報 (KTV Dao Presentation with Gemini 3.1 TTS)
+
+一套專為修行法語、聖哲名言打造的高質感 KTV 聲光同步展示系統，整合 **Google AI Studio 的 Gemini 3.1 Flash TTS (`gemini-3.1-flash-tts-preview`)** 語音生成技術，支援一鍵部署至 **[Vercel (anhome)](https://vercel.com/anhome)** 與 GitHub。
+
+---
+
+## 🌟 核心特色
+
+1. **KTV 聲光同步導唱引擎**：
+   - 英文逐字金光高亮 (`.ktv-word.active-word`) 與動態放大。
+   - 金色跳動蓮花指示球 (`#ktv-lotus-marker`) 隨單字跳躍導讀。
+   - 中文對照翻譯同步點亮，並帶有旋轉金色蓮花法輪徽章。
+   - 唱到「**Dao (道)**」單字時，自動觸發右上角【道 (Dao) 心照映】光暈，並透過 Web Audio API 合成真實西藏頌缽靈音。
+
+2. **Gemini 3.1 Flash TTS 語音工作室 (Google AI Studio 風格)**：
+   - 採用最新 `gemini-3.1-flash-tts-preview` 模型（相容 `gemini-2.5-flash`）。
+   - **男女音色庫**：支援 Aoede, Kore, Achernar, Autonoe, Charon, Puck, Fenrir, Achird, Algieba, Algenib 等。
+   - **Audio Profile 聲音人設**：可自訂發音者的沉靜禪意或莊嚴氛圍。
+   - **Director's note 導演筆記**：提供 Style（Whisper/Calm/Meditative/Storyteller）、Pace（The Drift 禪意慢速/Slow/Medium）、Accent（British GB/American US）精細調校。
+   - **專注英文發音**：Speaker 專門為英文法語生成純淨、神聖的語音朗讀。
+
+3. **自訂法語與中英對照編輯器**：
+   - 支援自由編輯、新增或批次貼上英文語句與中文翻譯。
+   - 內建智慧時間軸對齊演算法，自動計算每個單詞的 KTV 停留時間。
+   - 支援載入本機音檔（WAV / MP3 / AAC）。
+
+4. **雲端一鍵部署**：
+   - 完美適配 Vercel Serverless Function 與 Next.js 14+ 架構。
+
+---
+
+## 🚀 本地開發與測試
+
+```bash
+# 1. 安裝相依套件
+npm install
+
+# 2. 啟動開發伺服器
+npm run dev
+
+# 3. 在瀏覽器打開
+http://localhost:3000
+```
+
+---
+
+## 📦 部署到 GitHub 與 Vercel 指南
+
+### 步驟 1：推送到您的 GitHub Repository
+
+```bash
+# 初始化 Git 倉庫
+git init
+git add .
+git commit -m "feat: initial commit for KTV Dao Presentation with Gemini 3.1 TTS"
+
+# 建立 main 分支並關聯至您的 GitHub
+git branch -M main
+git remote add origin https://github.com/anhome/ktv-dao-presentation.git
+git push -u origin main
+```
+
+### 步驟 2：在 Vercel 上完成一鍵部署
+
+1. 前往 **[Vercel 控制台 (https://vercel.com/anhome)](https://vercel.com/anhome)**。
+2. 點擊 **"Add New..."** → **"Project"**。
+3. 匯入剛才建立的 GitHub 倉庫 (`ktv-dao-presentation`)。
+4. 在 **Environment Variables (環境變數)** 中新增：
+   - **Key**: `GEMINI_API_KEY`
+   - **Value**: 您的 Google AI Studio API Key（[可在此免費取得](https://aistudio.google.com/app/apikey)）
+5. 點擊 **"Deploy"**，約 1 分鐘內即可自動建置並取得線上網址！
+
+---
+
+## 🛠️ 技術架構
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, Google Fonts (Noto Serif TC, Playfair Display)
+- **Icons**: Lucide React
+- **Audio Engine**: Web Audio API (Singing Bowl Synthesizer) & HTML5 Audio
+- **AI Engine**: Google AI Studio Gemini API (`gemini-3.1-flash-tts-preview`, `gemini-2.5-flash`)
