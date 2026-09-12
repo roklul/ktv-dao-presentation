@@ -4,6 +4,9 @@ export const DEFAULT_PRESENTATION: PresentationData = {
   title: "修行法語 · 濟公活佛 KTV 聲光同步簡報",
   subtitle: "Self-Cultivation & Dao Practice · Audio-Visual Presentation",
   totalDuration: 24.5,
+  backgroundStyle: "realistic-photo",
+  customBackgroundUrl: "/images/jigong-bg.jpg",
+  overlayOpacity: 0.05,
   englishLines: [
     {
       id: "line-1",
@@ -139,6 +142,12 @@ export const DEFAULT_PRESENTATION: PresentationData = {
     }
   ]
 };
+
+export const PRESET_AUDIO_TRACKS = [
+  { id: 'custom', name: 'Gemini 3.1 Flash TTS (線上即時生成)', url: '' },
+  { id: 'original-1', name: '濟公活佛法語錄音 1 (20260912-2.m4a)', url: '/audio/20260912-2.m4a' },
+  { id: 'original-2', name: '濟公活佛法語錄音 2 (2060912.m4a)', url: '/audio/2060912.m4a' },
+];
 
 export const AVAILABLE_VOICES: VoiceOption[] = [
   // Female Voices

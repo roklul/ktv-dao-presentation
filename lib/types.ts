@@ -20,12 +20,17 @@ export interface ChineseVerse {
   end: number;
 }
 
+export type BackgroundStyle = 'realistic-photo' | 'dark-svg' | 'custom-image';
+
 export interface PresentationData {
   title: string;
   subtitle: string;
   englishLines: KtvLine[];
   chineseVerses: ChineseVerse[];
   totalDuration: number;
+  backgroundStyle: BackgroundStyle;
+  customBackgroundUrl?: string;
+  overlayOpacity: number; // 0 to 1
 }
 
 export type VoiceGender = 'female' | 'male';
