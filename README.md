@@ -91,6 +91,22 @@ git push -u origin main
 
 ---
 
+## 🛡️ 並行控制與跨實例防護架構 (Concurrency & Rate Limiting Architecture)
+
+- **前端跨分頁完整同步 (Cross-Tab Synchronization)**：
+  1. **BroadcastChannel 即時廣播**：透過 `dharma_tts_sync` 頻道在生成開始 (`TTS_START`) 與結束 (`TTS_END`) 即時同步全部分頁狀態，阻止多開分頁重複提交。
+  2. **跨分頁租約鎖 (Lease Lock)**：寫入 `DHARMA_TTS_LOCK`（具 25 秒自動過期機制），結合 `window.storage` 事件與 `beforeunload` 釋放機制，即使分頁重整或延遲開啟也能確保狀態互斥。
+- **後端跨實例防護雙模設計 (Dual-Mode Backend Defense)**：
+  - **預設零相依模式 (Default Zero-Config)**：
+    - 同實例後端鎖：記憶體 Set/Map 在同實例內以原子序列阻擋重複請求（回傳 `409 Conflict`）。
+    - 邊緣層 WAF 限流：部署時於 Vercel 防火牆設定 `/api/tts` 限流（10 req/min），在邊緣節點控制請求頻率。
+  - **生產級跨實例分散式鎖 (Optional Distributed Mutex Lock)**：
+    - 若需嚴格杜絕 Serverless 多實例同時處理同一 IP 的並行生成，只需在環境變數配置 Upstash Redis 或 Vercel KV（`UPSTASH_REDIS_REST_URL` / `KV_REST_API_URL`）。
+    - 系統將自動升級為跨實例原子互斥鎖（`SET NX EX 20`）與分散式計數限流，無須額外安裝 npm 套件，零維護成本即可全球跨實例去重。
+- **逾時與費用責任邊界**：逾時 (15s) 代表代理層中斷等待，不代表上游已呼叫完畢；所有 Gemini TTS 調用皆使用訪客自行輸入的 Google API Key，不消耗開發者或伺服器專案之 AI 額度。
+
+---
+
 ## 🛠️ 技術架構
 
 - **Framework**: Next.js 16.3.5 (App Router, Turbopack)

@@ -104,25 +104,82 @@ function getClientIp(req: NextRequest): string {
     if (ip) return ip;
   }
 
-  // 2. Vercel / Trusted reverse proxy real-ip header
-  const realIp = req.headers.get('x-real-ip');
-  if (realIp) return realIp.trim();
-
-  // 3. NextRequest built-in IP property
+  // 2. Platform-provided IP property (set by the Vercel/Node runtime, not by the client)
   if ((req as any).ip) return (req as any).ip;
 
-  // 4. Standard x-forwarded-for (first entry)
-  const xForwardedFor = req.headers.get('x-forwarded-for');
-  if (xForwardedFor) {
-    const firstIp = xForwardedFor.split(',')[0].trim();
-    if (firstIp) return firstIp;
-  }
-
-  // 5. Cloudflare header ONLY if behind Cloudflare without preceding Vercel headers
-  const cfConnectingIp = req.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) return cfConnectingIp.trim();
-
+  // 3. Safe fallback: never trust client-supplied headers (x-forwarded-for, x-real-ip and
+  //    cf-connecting-ip are fully spoofable outside a trusted proxy chain — an attacker could
+  //    reset their rate-limit/concurrency quota per request). Falling back to one shared key
+  //    means a self-hosted proxy degrades to shared rate limiting instead of an easy bypass.
   return '127.0.0.1';
+}
+
+// -------------------------------------------------------------
+// Optional Distributed Lock & Rate Limiting via Redis REST API (Vercel KV / Upstash)
+// Native fetch with 1200ms safety timeout.
+// When env vars are absent, gracefully falls back to local memory without throwing.
+// -------------------------------------------------------------
+const REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+async function executeRedisCommand(command: (string | number)[]): Promise<any> {
+  if (!REDIS_REST_URL || !REDIS_REST_TOKEN) return null;
+  try {
+    const res = await fetch(REDIS_REST_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(command),
+      signal: AbortSignal.timeout(1200),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.result;
+  } catch {
+    return null;
+  }
+}
+
+async function acquireDistributedLock(ip: string): Promise<boolean> {
+  if (!REDIS_REST_URL || !REDIS_REST_TOKEN) return true; // fallback to memory lock
+  try {
+    // SET dharma_lock:<ip> 1 NX EX 20 -> returns "OK" if acquired, null if key exists
+    const result = await executeRedisCommand(['SET', `dharma_lock:${ip}`, '1', 'NX', 'EX', 20]);
+    return result === 'OK';
+  } catch {
+    return true; // fail-open to memory lock on network error
+  }
+}
+
+async function releaseDistributedLock(ip: string): Promise<void> {
+  if (!REDIS_REST_URL || !REDIS_REST_TOKEN) return;
+  try {
+    await executeRedisCommand(['DEL', `dharma_lock:${ip}`]);
+  } catch {
+    // ignore
+  }
+}
+
+async function checkDistributedRateLimit(ip: string): Promise<{ allowed: boolean; retryAfterSec?: number } | null> {
+  if (!REDIS_REST_URL || !REDIS_REST_TOKEN) return null;
+  try {
+    const key = `dharma_rate:${ip}`;
+    const count = await executeRedisCommand(['INCR', key]);
+    if (typeof count === 'number') {
+      if (count === 1) {
+        await executeRedisCommand(['EXPIRE', key, 60]);
+      }
+      if (count > MAX_REQUESTS_PER_WINDOW) {
+        return { allowed: false, retryAfterSec: 60 };
+      }
+      return { allowed: true };
+    }
+  } catch {
+    // fail-open to memory rate limiter on network error
+  }
+  return null;
 }
 
 // -------------------------------------------------------------
@@ -241,6 +298,28 @@ async function readJsonWithLimit<T = any>(
 export async function POST(req: NextRequest) {
   // 1. Rate Limiting Check (protect compute & prevent upstream flood)
   const clientIp = getClientIp(req);
+
+  // 1. Rate Limiting Check (protect compute & prevent upstream flood)
+  // 1.0 Optional: Distributed Rate Limiting via Redis (Vercel KV / Upstash)
+  const distRate = await checkDistributedRateLimit(clientIp);
+  if (distRate && !distRate.allowed) {
+    return NextResponse.json(
+      {
+        error: `請求過於頻繁，已觸發分佈式速率限制（每分鐘上限 ${MAX_REQUESTS_PER_WINDOW} 次）。請稍候 ${distRate.retryAfterSec || 60} 秒後再試。`,
+        code: 'RATE_LIMIT_EXCEEDED',
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(distRate.retryAfterSec || 60),
+          'X-RateLimit-Limit': String(MAX_REQUESTS_PER_WINDOW),
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+
+  // 1.1 Node-local sliding window rate limit
   const rateLimitResult = checkRateLimit(clientIp);
   if (!rateLimitResult.allowed) {
     return NextResponse.json(
@@ -259,7 +338,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1.1 In-flight concurrent request check (prevent duplicate parallel billable requests from same IP)
+  // 1.2 In-flight concurrent request check + claim (same instance)
+  // The check and claim below must stay adjacent with no await in between: only then is the
+  // sequence atomic in Node's event loop and immune to the double-submit race.
   if (activeRequestsByIp.has(clientIp)) {
     return NextResponse.json(
       {
@@ -270,18 +351,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Safe JSON Body Parsing with Size & Timeout Limits
-  const { data: body, errorResponse } = await readJsonWithLimit(req);
-  if (errorResponse) {
-    return errorResponse;
-  }
-
   activeRequestsByIp.add(clientIp);
+
+  // 1.3 Optional: Distributed Concurrency Mutex Lock across Serverless instances
+  const hasDistLock = await acquireDistributedLock(clientIp);
+  if (!hasDistLock) {
+    activeRequestsByIp.delete(clientIp);
+    return NextResponse.json(
+      {
+        error: '跨實例已有語音生成請求處理中，請等待完成後再提交，避免重複計費。',
+        code: 'DISTRIBUTED_CONCURRENT_REQUEST_BLOCKED',
+      },
+      { status: 409 }
+    );
+  }
   const controller = new AbortController();
-  // 15-second total lifecycle timeout covering upstream fetch and serialization
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
+    // 2. Safe JSON Body Parsing with Size & Timeout Limits
+    const { data: body, errorResponse } = await readJsonWithLimit(req);
+    if (errorResponse) {
+      return errorResponse;
+    }
+
+    // 15-second total lifecycle timeout covering upstream fetch and serialization
+    timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const {
       text,
       model = 'gemini-3.1-flash-tts-preview',
@@ -476,7 +572,10 @@ IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance,
     return NextResponse.json({ error: error.message || '內部伺服器錯誤' }, { status: 500 });
   } finally {
     activeRequestsByIp.delete(clientIp);
-    clearTimeout(timeoutId);
+    await releaseDistributedLock(clientIp);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 

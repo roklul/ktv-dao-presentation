@@ -43,6 +43,65 @@ export default function Home() {
   const lastTickRef = useRef<number>(0);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isGeneratingRef = useRef<boolean>(false);
+  const broadcastRef = useRef<BroadcastChannel | null>(null);
+
+  // Cross-tab synchronization via BroadcastChannel & localStorage storage events
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check if another tab is currently generating on load
+    const activeLock = parseInt(localStorage.getItem('DHARMA_TTS_LOCK') || '0', 10);
+    if (Date.now() - activeLock < 20000) {
+      isGeneratingRef.current = true;
+      setIsGeneratingTts(true);
+    }
+
+    // 1. Modern BroadcastChannel API
+    let channel: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      channel = new BroadcastChannel('dharma_tts_sync');
+      broadcastRef.current = channel;
+
+      channel.onmessage = (event) => {
+        if (event.data?.type === 'TTS_START') {
+          isGeneratingRef.current = true;
+          setIsGeneratingTts(true);
+        } else if (event.data?.type === 'TTS_END') {
+          isGeneratingRef.current = false;
+          setIsGeneratingTts(false);
+        }
+      };
+    }
+
+    // 2. Storage event listener for cross-tab sync fallback
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'DHARMA_TTS_LOCK') {
+        if (e.newValue) {
+          isGeneratingRef.current = true;
+          setIsGeneratingTts(true);
+        } else {
+          isGeneratingRef.current = false;
+          setIsGeneratingTts(false);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 3. Clean up lock on beforeunload in case user closes tab mid-generation
+    const handleBeforeUnload = () => {
+      if (isGeneratingRef.current) {
+        localStorage.removeItem('DHARMA_TTS_LOCK');
+        broadcastRef.current?.postMessage({ type: 'TTS_END' });
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      channel?.close();
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -255,9 +314,10 @@ export default function Home() {
   // Trigger Gemini TTS generation with concurrency lock
   const handleGenerateTts = useCallback(
     async (textOverride?: string) => {
-      // Concurrency lock to block parallel submissions and duplicate billing
-      if (isGeneratingRef.current) {
-        showToast('語音生成進行中，請稍候完成...');
+      // Concurrency lock to block parallel submissions and duplicate billing across tabs
+      const activeLock = typeof window !== 'undefined' ? parseInt(localStorage.getItem('DHARMA_TTS_LOCK') || '0', 10) : 0;
+      if (isGeneratingRef.current || (activeLock > 0 && Date.now() - activeLock < 25000)) {
+        showToast('語音生成進行中（或在其他分頁執行），請稍候完成...');
         return;
       }
 
@@ -274,6 +334,20 @@ export default function Home() {
 
       isGeneratingRef.current = true;
       setIsGeneratingTts(true);
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('DHARMA_TTS_LOCK', String(Date.now()));
+        } catch {
+          // ignore storage error
+        }
+      }
+      try {
+        broadcastRef.current?.postMessage({ type: 'TTS_START' });
+      } catch {
+        // ignore broadcast error
+      }
+
       const speakerLabel = activePreset === 'speaker-1' ? 'Speaker 1 (慈悲女聲)' : 'Speaker 2 (莊嚴女聲)';
       setStatusText(`正在呼叫 Gemini 生成 ${speakerLabel} 語音...`);
       showToast(`正在透過 Gemini 3.1 TTS 生成 ${speakerLabel} 語音...`);
@@ -302,6 +376,18 @@ export default function Home() {
       } finally {
         isGeneratingRef.current = false;
         setIsGeneratingTts(false);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('DHARMA_TTS_LOCK');
+          } catch {
+            // ignore
+          }
+        }
+        try {
+          broadcastRef.current?.postMessage({ type: 'TTS_END' });
+        } catch {
+          // ignore
+        }
       }
     },
     [presentation, speakerSettings, activePreset, playbackRate, showToast]
