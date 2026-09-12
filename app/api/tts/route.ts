@@ -1,43 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// In-Memory Sliding Window Rate Limiter
-interface RateLimitRecord {
-  timestamps: number[];
-}
-
-const rateLimitMap = new Map<string, RateLimitRecord>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_SERVER_KEY = 10;      // 10 requests / min for server fallback key
-const MAX_REQUESTS_CLIENT_KEY = 30;      // 30 requests / min for user-provided custom key
-
-function isRateLimited(clientIp: string, isCustomKey: boolean): boolean {
-  const now = Date.now();
-  const limit = isCustomKey ? MAX_REQUESTS_CLIENT_KEY : MAX_REQUESTS_SERVER_KEY;
-  const record = rateLimitMap.get(clientIp) || { timestamps: [] };
-
-  // Filter timestamps within window
-  record.timestamps = record.timestamps.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
-
-  if (record.timestamps.length >= limit) {
-    return true;
-  }
-
-  record.timestamps.push(now);
-  rateLimitMap.set(clientIp, record);
-
-  // Periodically clean up stale entries (every 100 entries)
-  if (rateLimitMap.size > 200) {
-    for (const [ip, data] of rateLimitMap.entries()) {
-      if (data.timestamps.every((ts) => now - ts >= RATE_LIMIT_WINDOW_MS)) {
-        rateLimitMap.delete(ip);
-      }
-    }
-  }
-
-  return false;
-}
-
-// Whitelists
 const ALLOWED_MODELS = new Set([
   'gemini-3.1-flash-tts-preview',
   'gemini-2.5-flash',
@@ -72,15 +34,14 @@ const ALLOWED_STYLES = new Set([
 const ALLOWED_PACES = new Set(['drift', 'slow', 'medium', 'fast']);
 const ALLOWED_ACCENTS = new Set(['en-US', 'en-GB', 'en-AU', 'en-IN']);
 
-const MAX_TEXT_LENGTH = 1500; // Cap input text to prevent resource exhaustion
+const MAX_TEXT_LENGTH = 1500;
 
 export async function POST(req: NextRequest) {
-  try {
-    // 1. IP extraction for rate limiting
-    const forwardedFor = req.headers.get('x-forwarded-for');
-    const realIp = req.headers.get('x-real-ip');
-    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || '127.0.0.1';
+  const controller = new AbortController();
+  // 15-second timeout covering the entire request, network, and body parsing lifecycle
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+  try {
     let body: any;
     try {
       body = await req.json();
@@ -98,6 +59,22 @@ export async function POST(req: NextRequest) {
       accent = 'en-US',
       apiKey,
     } = body;
+
+    // 1. Mandatory User API Key Check (Zero Server Key Exposure)
+    // Server-side shared key is completely disabled for public callers.
+    // Callers MUST provide their own valid Google AI Studio API Key.
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            '基於資安保護與額度安全，本服務不開放匿名共用 Key。請在右上角「發音調校」輸入您的 Google AI Studio API Key 即可自訂生成，或直接使用預載之高品質錄音。',
+          code: 'API_KEY_REQUIRED',
+        },
+        { status: 401 }
+      );
+    }
+
+    const userApiKey = apiKey.trim();
 
     // 2. Input validation & Whitelisting
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -120,36 +97,6 @@ export async function POST(req: NextRequest) {
     const safePace = ALLOWED_PACES.has(pace) ? pace : 'drift';
     const safeAccent = ALLOWED_ACCENTS.has(accent) ? accent : 'en-US';
 
-    const isCustomKey = !!(apiKey && typeof apiKey === 'string' && apiKey.trim().length > 0);
-    const effectiveApiKey = isCustomKey ? apiKey.trim() : process.env.GEMINI_API_KEY;
-
-    // 3. API Key & Authentication Check
-    if (!effectiveApiKey) {
-      return NextResponse.json(
-        {
-          error:
-            '未檢測到 Gemini API Key。請在右上角「發音調校」中輸入您的 Google AI Studio API Key，或在部署環境變數中設定 GEMINI_API_KEY。',
-        },
-        { status: 401 }
-      );
-    }
-
-    // 4. Rate Limiting Check
-    if (isRateLimited(clientIp, isCustomKey)) {
-      return NextResponse.json(
-        {
-          error: '請求次數過於頻繁，請稍候再試（每分鐘請求已達上限）。',
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': '60',
-          },
-        }
-      );
-    }
-
-    // 5. Build prompt instructions safely
     const styleInstructionMap: Record<string, string> = {
       whisper: 'Use a soft, tranquil, whispering breath tone with gentle reverence.',
       calm: 'Use a peaceful, serene, mindful and steady cadence.',
@@ -177,7 +124,9 @@ ${paceInstructionMap[safePace] || paceInstructionMap.drift}
 Accent preference: ${safeAccent}.
 IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance, and spiritual poise. Do not include any commentary.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${effectiveApiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${encodeURIComponent(
+      userApiKey
+    )}`;
 
     const payload = {
       contents: [
@@ -209,90 +158,83 @@ IMPORTANT: Recite ONLY the provided English text with supreme clarity, elegance,
       },
     };
 
-    // 6. Network request with 15-second AbortController timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
+    if (!response.ok) {
+      const errText = await response.text();
+      let errJson: any;
+      try {
+        errJson = JSON.parse(errText);
+      } catch {
+        errJson = { message: errText };
+      }
 
-      clearTimeout(timeoutId);
+      const upstreamErrMsg = errJson?.error?.message || errText;
 
-      if (!response.ok) {
-        const errText = await response.text();
-        let errJson: any;
-        try {
-          errJson = JSON.parse(errText);
-        } catch {
-          errJson = { message: errText };
-        }
-
-        const upstreamErrMsg = errJson?.error?.message || errText;
-
-        // Directly return status code and error message without cascading retries
-        if (response.status === 429) {
-          return NextResponse.json(
-            { error: 'Gemini API 額度或速率已達上限 (429 Too Many Requests)，請稍後再試。' },
-            { status: 429 }
-          );
-        }
-        if (response.status === 401 || response.status === 403) {
-          return NextResponse.json(
-            { error: 'Gemini API Key 無效或權限不足，請檢查您的 API Key。' },
-            { status: 403 }
-          );
-        }
-
+      // Stop cascading retries immediately on Client / Auth / Quota errors
+      if (response.status === 429) {
         return NextResponse.json(
-          { error: `上游服務回應錯誤 (${response.status}): ${upstreamErrMsg}` },
-          { status: response.status }
+          { error: '您的 Gemini API 額度或請求速率已達上限 (429 Too Many Requests)，請稍後再試。' },
+          { status: 429 }
+        );
+      }
+      if (response.status === 401 || response.status === 403) {
+        return NextResponse.json(
+          { error: '提供的 Gemini API Key 無效或未開通權限，請檢查您的 Google AI Studio 金鑰。' },
+          { status: 403 }
         );
       }
 
-      const data = await response.json();
-      const candidate = data.candidates?.[0];
-      const parts = candidate?.content?.parts || [];
-
-      let audioData: { data: string; mimeType: string } | null = null;
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.data) {
-          audioData = {
-            data: part.inlineData.data,
-            mimeType: part.inlineData.mimeType || 'audio/pcm;rate=24000',
-          };
-          break;
-        }
-      }
-
-      if (audioData) {
-        return NextResponse.json({
-          audioBase64: audioData.data,
-          mimeType: audioData.mimeType,
-          sampleRate: 24000,
-          modelUsed: safeModel,
-        });
-      }
-
       return NextResponse.json(
-        { error: 'Gemini API 未回傳音訊資料，請確認模型語音支援。' },
-        { status: 500 }
+        { error: `Gemini API 回應錯誤 (${response.status}): ${upstreamErrMsg}` },
+        { status: response.status }
       );
-    } catch (fetchErr: any) {
-      clearTimeout(timeoutId);
-      if (fetchErr.name === 'AbortError') {
-        return NextResponse.json({ error: 'TTS 請求逾時（超過 15 秒），請重試。' }, { status: 504 });
-      }
-      throw fetchErr;
     }
+
+    // response.json() is safely encompassed within the 15-second AbortController timeout
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+
+    let audioData: { data: string; mimeType: string } | null = null;
+    for (const part of parts) {
+      if (part.inlineData && part.inlineData.data) {
+        audioData = {
+          data: part.inlineData.data,
+          mimeType: part.inlineData.mimeType || 'audio/pcm;rate=24000',
+        };
+        break;
+      }
+    }
+
+    if (audioData) {
+      return NextResponse.json({
+        audioBase64: audioData.data,
+        mimeType: audioData.mimeType,
+        sampleRate: 24000,
+        modelUsed: safeModel,
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Gemini API 未回傳音訊資料，請確認模型語音支援。' },
+      { status: 500 }
+    );
   } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return NextResponse.json({ error: 'TTS 請求逾時（超過 15 秒），請重試。' }, { status: 504 });
+    }
     console.error('TTS API error:', error);
     return NextResponse.json({ error: error.message || '內部伺服器錯誤' }, { status: 500 });
+  } finally {
+    // Guaranteed timeout cleanup covering full lifecycle
+    clearTimeout(timeoutId);
   }
 }

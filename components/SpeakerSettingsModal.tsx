@@ -9,6 +9,7 @@ interface SpeakerSettingsModalProps {
   settings: SpeakerSettings;
   onSave: (newSettings: SpeakerSettings) => void;
   onPreviewVoice: (voiceId: string) => void;
+  onClearKey?: () => void;
 }
 
 export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
@@ -17,6 +18,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
   settings,
   onSave,
   onPreviewVoice,
+  onClearKey,
 }) => {
   const [localSettings, setLocalSettings] = useState<SpeakerSettings>(settings);
   const [voiceSearch, setVoiceSearch] = useState('');
@@ -51,6 +53,9 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
   const handleClearKey = () => {
     setLocalSettings((prev) => ({ ...prev, customApiKey: '' }));
     localStorage.removeItem('GEMINI_API_KEY');
+    if (onClearKey) {
+      onClearKey();
+    }
   };
 
   return (

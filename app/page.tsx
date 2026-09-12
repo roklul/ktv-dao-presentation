@@ -386,6 +386,10 @@ export default function Home() {
           setActivePreset('custom');
           showToast('已儲存 Speaker 自訂設定');
         }}
+        onClearKey={() => {
+          setSpeakerSettings((prev) => ({ ...prev, customApiKey: '' }));
+          showToast('已安全清除 API Key');
+        }}
         onPreviewVoice={handlePreviewVoice}
       />
 
