@@ -20,7 +20,6 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
     top: 0,
     visible: false,
   });
-  const [isDaoActive, setIsDaoActive] = useState(false);
 
   const activeWordRef = useRef<HTMLSpanElement | null>(null);
 
@@ -132,7 +131,6 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
                 {line.words.map((word, wordIdx) => {
                   const isWordActive = currentTime >= word.start && currentTime <= word.end;
                   const isPast = currentTime > word.end;
-                  const isDao = word.isDao || word.text.toLowerCase().includes('dao');
 
                   return (
                     <span
@@ -140,16 +138,11 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
                       ref={(el) => {
                         if (isWordActive) {
                           activeWordRef.current = el;
-                          if (isDao !== isDaoActive) {
-                            setIsDaoActive(isDao);
-                          }
                         }
                       }}
                       className={`ktv-word ${
                         isWordActive
-                          ? isDao
-                            ? 'active-word word-dao'
-                            : 'active-word'
+                          ? 'active-word'
                           : isPast
                           ? 'past-word'
                           : ''
@@ -205,17 +198,6 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           })}
         </div>
 
-      </div>
-
-      {/* Active "Dao" Corner Flare Badge */}
-      <div
-        id="dao-glow-banner"
-        className={`absolute top-2 right-2 sm:top-3 sm:right-5 pointer-events-none transition-opacity duration-300 flex items-center gap-1.5 bg-sky-950/90 border border-sky-400/90 px-2 sm:px-3 py-1 rounded-full shadow-[0_0_20px_rgba(56,189,248,0.8)] z-30 ${
-          isDaoActive ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
-        <span className="text-[11px] sm:text-xs text-sky-200 font-bold tracking-wider">道 (Dao) 心照映</span>
       </div>
     </main>
   );

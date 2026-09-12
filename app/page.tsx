@@ -8,7 +8,6 @@ import { KtvPresentation } from '../components/KtvPresentation';
 import { ControllerBar } from '../components/ControllerBar';
 import { SpeakerSettingsModal } from '../components/SpeakerSettingsModal';
 import { ScriptEditorModal } from '../components/ScriptEditorModal';
-import { playTibetanSingingBowl } from '../lib/audioSynthesizer';
 import { generateGeminiSpeech } from '../lib/geminiTts';
 import { Bell } from 'lucide-react';
 
@@ -22,7 +21,6 @@ export default function Home() {
   const [playbackRate, setPlaybackRate] = useState(1.0);
 
   const [showLotusMarker, setShowLotusMarker] = useState(true);
-  const [enableDaoChime, setEnableDaoChime] = useState(true);
   const [customAudioLoaded, setCustomAudioLoaded] = useState(true);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState('original-1');
 
@@ -35,11 +33,9 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
-  const lastDaoWordRef = useRef<string | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = useCallback((msg: string) => {
@@ -71,44 +67,6 @@ export default function Home() {
       }
     }
   }, []);
-
-  // Init AudioContext on user gesture
-  const initAudioContext = useCallback(() => {
-    if (!audioContextRef.current && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        audioContextRef.current = new AudioCtx();
-      }
-    }
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-  }, []);
-
-  // Dao chime trigger check
-  useEffect(() => {
-    let activeDaoId: string | null = null;
-
-    for (const line of presentation.englishLines) {
-      if (currentTime >= line.start && currentTime <= line.end) {
-        for (const word of line.words) {
-          if (currentTime >= word.start && currentTime <= word.end) {
-            if (word.isDao || word.text.toLowerCase().includes('dao')) {
-              activeDaoId = word.id;
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    if (activeDaoId && activeDaoId !== lastDaoWordRef.current) {
-      if (enableDaoChime) {
-        playTibetanSingingBowl(audioContextRef.current);
-      }
-    }
-    lastDaoWordRef.current = activeDaoId;
-  }, [currentTime, presentation, enableDaoChime]);
 
   // Fallback Web Speech Synthesis
   const playWebSpeech = useCallback(() => {
@@ -195,7 +153,6 @@ export default function Home() {
   }, [isPlaying, startAnimation]);
 
   const playAudio = useCallback(() => {
-    initAudioContext();
     setIsPlaying(true);
 
     if (customAudioLoaded && audioRef.current && audioRef.current.src) {
@@ -205,7 +162,7 @@ export default function Home() {
     } else {
       playWebSpeech();
     }
-  }, [initAudioContext, customAudioLoaded, currentTime, playbackRate, playWebSpeech]);
+  }, [customAudioLoaded, currentTime, playbackRate, playWebSpeech]);
 
   const pauseAudio = useCallback(() => {
     setIsPlaying(false);
@@ -460,13 +417,11 @@ export default function Home() {
         duration={duration}
         playbackRate={playbackRate}
         showLotusMarker={showLotusMarker}
-        enableDaoChime={enableDaoChime}
         onPlayToggle={handlePlayToggle}
         onReset={handleReset}
         onSeek={handleSeek}
         onSpeedChange={handleSpeedChange}
         onToggleLotus={() => setShowLotusMarker(!showLotusMarker)}
-        onToggleDaoChime={() => setEnableDaoChime(!enableDaoChime)}
         statusText={statusText}
       />
 

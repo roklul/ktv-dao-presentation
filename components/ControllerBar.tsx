@@ -9,13 +9,11 @@ interface ControllerBarProps {
   duration: number;
   playbackRate: number;
   showLotusMarker: boolean;
-  enableDaoChime: boolean;
   onPlayToggle: () => void;
   onReset: () => void;
   onSeek: (time: number) => void;
   onSpeedChange: (speed: number) => void;
   onToggleLotus: () => void;
-  onToggleDaoChime: () => void;
   statusText: string;
 }
 
@@ -26,13 +24,11 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
   duration,
   playbackRate,
   showLotusMarker,
-  enableDaoChime,
   onPlayToggle,
   onReset,
   onSeek,
   onSpeedChange,
   onToggleLotus,
-  onToggleDaoChime,
   statusText,
 }) => {
   const maxDuration = Math.max(1, duration || presentation.totalDuration || 24.5);
@@ -124,15 +120,6 @@ export const ControllerBar: React.FC<ControllerBarProps> = ({
               className="rounded border-stone-700 text-amber-500 focus:ring-0 bg-stone-800"
             />
             <span>KTV 蓮花跳動導唱</span>
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer hover:text-amber-300 transition">
-            <input
-              type="checkbox"
-              checked={enableDaoChime}
-              onChange={onToggleDaoChime}
-              className="rounded border-stone-700 text-amber-500 focus:ring-0 bg-stone-800"
-            />
-            <span>Dao 頌缽靈音</span>
           </label>
         </div>
 

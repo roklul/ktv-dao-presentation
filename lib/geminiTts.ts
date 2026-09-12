@@ -102,15 +102,11 @@ export function alignWordTimings(
       const wEnd = currentTime + duration;
       currentTime = wEnd;
 
-      const cleanWord = wordStr.toLowerCase().replace(/[^a-z]/g, '');
-      const isDao = cleanWord === 'dao' || cleanWord === 'tao';
-
       return {
         id: `w-${lineIdx + 1}-${wordIdx + 1}`,
         text: wordStr,
         start: parseFloat(wStart.toFixed(2)),
         end: parseFloat(wEnd.toFixed(2)),
-        isDao,
       };
     });
 
