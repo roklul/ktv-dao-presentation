@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SpeakerSettings, VoiceOption } from '../lib/types';
 import { AVAILABLE_VOICES } from '../lib/defaultLyrics';
-import { X, Mic, Sparkles, Sliders, Key, Volume2, Search, Check, Play } from 'lucide-react';
+import { X, Mic, Sparkles, Sliders, Key, Search, Check, Play, Trash2 } from 'lucide-react';
 
 interface SpeakerSettingsModalProps {
   isOpen: boolean;
@@ -35,11 +35,22 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
   });
 
   const handleSave = () => {
-    onSave(localSettings);
-    if (localSettings.customApiKey) {
-      localStorage.setItem('GEMINI_API_KEY', localSettings.customApiKey);
+    const cleanedKey = localSettings.customApiKey?.trim() || '';
+    const updatedSettings = { ...localSettings, customApiKey: cleanedKey };
+    onSave(updatedSettings);
+
+    // Securely handle localStorage persistence: remove item if empty
+    if (cleanedKey.length > 0) {
+      localStorage.setItem('GEMINI_API_KEY', cleanedKey);
+    } else {
+      localStorage.removeItem('GEMINI_API_KEY');
     }
     onClose();
+  };
+
+  const handleClearKey = () => {
+    setLocalSettings((prev) => ({ ...prev, customApiKey: '' }));
+    localStorage.removeItem('GEMINI_API_KEY');
   };
 
   return (
@@ -54,7 +65,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-amber-100">Speaker settings (AI Studio 聲音設定)</h2>
-              <p className="text-xs text-stone-400">自訂 Gemini 3.1 TTS 英文模型發音、語調與角色人設</p>
+              <p className="text-xs text-stone-400">自訂 Gemini 3.1 TTS 英文發音、語調與角色人設</p>
             </div>
           </div>
           <button
@@ -73,7 +84,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5" />
-                Google AI Studio API Key (支援本地安全儲存)
+                Google AI Studio API Key (支援安全本機儲存)
               </label>
               <a
                 href="https://aistudio.google.com/app/apikey"
@@ -81,27 +92,40 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
                 rel="noreferrer"
                 className="text-[11px] text-amber-400 hover:underline"
               >
-                獲取 API Key →
+                獲取免費 API Key →
               </a>
             </div>
-            <div className="relative">
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={localSettings.customApiKey || ''}
-                onChange={(e) => setLocalSettings({ ...localSettings, customApiKey: e.target.value })}
-                placeholder="貼上您的 Gemini API Key (AIzaSy...)"
-                className="w-full bg-stone-950 border border-stone-700 focus:border-amber-400 rounded-lg px-3 py-2 text-xs text-stone-200 pr-16 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-stone-400 hover:text-stone-200 px-1.5 py-0.5 rounded bg-stone-800"
-              >
-                {showKey ? '隱藏' : '顯示'}
-              </button>
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={localSettings.customApiKey || ''}
+                  onChange={(e) => setLocalSettings({ ...localSettings, customApiKey: e.target.value })}
+                  placeholder="貼上您的 Gemini API Key (AIzaSy...)"
+                  className="w-full bg-stone-950 border border-stone-700 focus:border-amber-400 rounded-lg px-3 py-2 text-xs text-stone-200 pr-16 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-stone-400 hover:text-stone-200 px-1.5 py-0.5 rounded bg-stone-800"
+                >
+                  {showKey ? '隱藏' : '顯示'}
+                </button>
+              </div>
+              {localSettings.customApiKey && (
+                <button
+                  type="button"
+                  onClick={handleClearKey}
+                  className="px-2.5 py-2 rounded-lg bg-stone-800 hover:bg-rose-950 text-stone-400 hover:text-rose-300 text-xs border border-stone-700 flex items-center gap-1 transition"
+                  title="清除儲存的 Key"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">清除</span>
+                </button>
+              )}
             </div>
             <p className="text-[11px] text-stone-400">
-              * 若部署於 Vercel，亦可在專案 Settings → Environment Variables 設定 <code className="text-amber-300">GEMINI_API_KEY</code>。
+              * 若留空並儲存，將安全刪除本機儲存的 Key。若部署於 Vercel，可在環境變數設定 <code className="text-amber-300">GEMINI_API_KEY</code>。
             </p>
           </div>
 
@@ -143,6 +167,7 @@ export const SpeakerSettingsModal: React.FC<SpeakerSettingsModalProps> = ({
               value={localSettings.audioProfile}
               onChange={(e) => setLocalSettings({ ...localSettings, audioProfile: e.target.value })}
               rows={2}
+              maxLength={300}
               className="w-full bg-stone-950 border border-stone-800 focus:border-amber-400 rounded-xl p-3 text-xs text-stone-200 focus:outline-none resize-none"
               placeholder="例如: A deep, resonant narrator of sacred wisdom with serene peace and mindfulness."
             />
