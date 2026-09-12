@@ -48,14 +48,14 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       id="presentation-viewport"
       className="relative w-full max-w-6xl min-h-[540px] sm:min-h-0 sm:aspect-[16/9] bg-[#1a140e] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-amber-800/40 select-none flex flex-col justify-between"
     >
-      {/* Original Master Artwork Background */}
+      {/* Background Image Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
           src="/images/jigong-bg.jpg"
           alt="濟公活佛修行法語"
           className="w-full h-full object-cover object-left sm:object-center"
         />
-        {/* Soft Warm Dawn Gradient on Right Side to harmonize dynamic KTV text */}
+        {/* Soft Warm Dawn Atmosphere */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f8f1e7]/70 to-[#f8f1e7]/85" />
       </div>
 
@@ -80,10 +80,10 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
       {/* Presentation Central Content Box */}
       <div className="relative z-20 w-full h-full flex flex-col justify-center pl-[28%] sm:pl-[34%] md:pl-[36%] pr-3 sm:pr-8 py-3 sm:py-5">
         
-        {/* English Verses Container */}
+        {/* English Verses (EB Garamond / Classic Book Serif) */}
         <div
           id="english-lyrics-box"
-          className="space-y-1 sm:space-y-1.5 font-serif-en text-[13px] sm:text-[17px] md:text-[21px] lg:text-[23px] leading-snug tracking-wide"
+          className="space-y-1 sm:space-y-1.5 font-en-classic text-[14px] sm:text-[18px] md:text-[22px] lg:text-[24px] leading-snug tracking-wide"
         >
           {presentation.englishLines.map((line, lineIdx) => {
             const isRowActive = currentTime >= line.start && currentTime <= line.end;
@@ -122,8 +122,8 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           })}
         </div>
 
-        {/* Golden Lotus Center Ornament (Exact Replica) */}
-        <div className="my-1.5 sm:my-3 flex items-center justify-center gap-3 w-full max-w-xl">
+        {/* Golden Lotus Center Ornament (Exact Replica from Reference Art) */}
+        <div className="my-1.5 sm:my-3.5 flex items-center justify-center gap-3 w-full max-w-xl">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-600/70 to-amber-500"></div>
           <div className="text-amber-600 flex items-center px-1">
             <svg
@@ -144,10 +144,10 @@ export const KtvPresentation: React.FC<KtvPresentationProps> = ({
           <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-amber-600/70 to-amber-500"></div>
         </div>
 
-        {/* Traditional Chinese Translation Verses */}
+        {/* Traditional Chinese Calligraphy Verses (LXGW WenKai TC / 標楷體) */}
         <div
           id="chinese-lyrics-box"
-          className="space-y-1 text-[13px] sm:text-[17px] md:text-[21px] lg:text-[23px] font-medium tracking-wide font-serif"
+          className="space-y-1 font-cn-kaiti text-[14px] sm:text-[18px] md:text-[22px] lg:text-[25px] leading-snug tracking-wider"
         >
           {presentation.chineseVerses.map((verse, idx) => {
             const isCnActive = currentTime >= verse.start && currentTime <= verse.end;

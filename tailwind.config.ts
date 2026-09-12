@@ -9,8 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ["var(--font-noto-serif-tc)", "serif"],
-        "serif-en": ["var(--font-playfair)", "Georgia", "serif"],
+        serif: ["'LXGW WenKai TC'", "'BiauKai'", "'DFKai-SB'", "'TW-Kai'", "'STKaiti'", "'KaiTi'", "'Noto Serif TC'", "serif"],
+        "en-classic": ["'EB Garamond'", "'Times New Roman'", "'Libre Baskerville'", "Georgia", "serif"],
+        "cn-kaiti": ["'LXGW WenKai TC'", "'BiauKai'", "'DFKai-SB'", "'TW-Kai'", "'STKaiti'", "'KaiTi'", "'Noto Serif TC'", "serif"],
       },
     },
   },
